@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-0">{{ titulo }}</h4>
+      <div class="text-muted small">
+        Fecha: {{ fecha|date:"d/m/Y" }} · Total: {{ filas|length }}
+      </div>
+    </div>
+    <button type="button"
+            class="btn btn-outline-secondary d-print-none"
+            onclick="window.print()">
+      <i class="bi bi-printer me-1"></i>Imprimir
+    </button>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Empleado / Usuario</th>
+              <th>Departamento</th>
+              <th>Tipo</th>
+              <th>Puesto</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in filas %}
+              <tr>
+                <td>{{ r.nombre }}</td>
+                <td>{{ r.departamento }}</td>
+                <td>{{ r.tipo_vinculacion }}</td>
+                <td>{{ r.puesto }}</td>
+                <td>{{ r.detalle }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">
+                  No hay registros para la fecha seleccionada.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  @media print {
+    .navbar, #sidebar, .d-print-none { display: none !important; }
+    body { background: #fff; }
+  }
+</style>
+{% endblock %}

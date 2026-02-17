@@ -1,0 +1,4 @@
+<option value="">---------</option>
+{% for user in users %}
+<option value="{{ user.id }}">{{ user.dispositivo.nombre }} - {{ user.nombre|default:"Sin Nombre" }} (ID: {{ user.user_id }})</option>
+{% endfor %}

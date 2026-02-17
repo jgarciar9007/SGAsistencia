@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 mb-1"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Días con Solo Entrada</h2>
+      <p class="text-muted mb-0">Personas que olvidaron marcar la salida</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'reportes:solo_entrada_pdf' %}?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort={{ sort }}&order={{ order }}"
+        class="btn btn-danger d-flex align-items-center" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-2"></i> Exportar PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-2">
+          <label class="form-label fw-bold small text-uppercase">Inicio</label>
+          <input type="date" name="inicio" class="form-control" value="{{ inicio|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold small text-uppercase">Fin</label>
+          <input type="date" name="fin" class="form-control" value="{{ fin|date:'Y-m-d' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-uppercase">Departamento</label>
+          <select name="departamento" class="form-select">
+            <option value="">Todos los departamentos</option>
+            {% for d in departamentos %}
+            <option value="{{ d }}" {% if depto_sel==d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small text-uppercase">Buscar</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="q" class="form-control border-start-0" value="{{ q }}" placeholder="Nombre...">
+          </div>
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Actualizar</button>
+        </div>
+        <input type="hidden" name="sort" value="{{ sort }}">
+        <input type="hidden" name="order" value="{{ order }}">
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4">
+              <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=nombre&order={% if sort == 'nombre' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                class="text-decoration-none text-dark">
+                Empleado {% if sort == 'nombre' %}<i
+                  class="bi bi-sort-alpha-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
+              </a>
+            </th>
+            <th>Departamento</th>
+            <th>Tipo</th>
+            <th class="text-end pe-4">
+              <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=solo_entrada&order={% if sort == 'solo_entrada' and order == 'asc' %}desc{% else %}asc{% endif %}"
+                class="text-decoration-none text-dark">
+                Días Solo Entrada {% if sort == 'solo_entrada' %}<i
+                  class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
+              </a>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="ps-4 fw-medium">{{ r.nombre }}</td>
+            <td><span class="badge bg-light text-dark fw-normal border">{{ r.departamento }}</span></td>
+            <td>{{ r.tipo }}</td>
+            <td class="text-end pe-4 fw-bold text-warning">{{ r.dias_solo_entrada }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center py-5 text-muted">No hay datos</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

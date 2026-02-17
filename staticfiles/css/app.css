@@ -1,0 +1,7 @@
+@media (max-width: 768px) {
+  :root { font-size: 16px; }
+  .form-control, .form-select { padding: .75rem 1rem; font-size: 1rem; }
+  .btn { padding: .6rem 1rem; font-size: 1rem; }
+  .card { border-radius: .9rem; }
+  .table { font-size: .95rem; }
+}

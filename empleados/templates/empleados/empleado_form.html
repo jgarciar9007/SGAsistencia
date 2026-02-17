@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h4 mb-0">
+      {% if modo == "crear" %}<i class="bi bi-person-plus me-2"></i>Nuevo empleado
+      {% else %}<i class="bi bi-pencil-square me-2"></i>Editar empleado{% endif %}
+    </h2>
+    <a href="{% url 'empleados:list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Identificación -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-card-list me-1"></i> Identificación
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Número</label>
+            {{ form.numero }}
+            {% if form.numero.errors %}<div class="text-danger small">{{ form.numero.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Doc. ID</label>
+            {{ form.doc_id }}
+            {% if form.doc_id.errors %}<div class="text-danger small">{{ form.doc_id.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Tipo vinculación</label>
+            {{ form.tipo_vinculacion }}
+            {% if form.tipo_vinculacion.errors %}<div class="text-danger small">{{ form.tipo_vinculacion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Puesto</label>
+            {{ form.puesto }}
+            {% if form.puesto.errors %}<div class="text-danger small">{{ form.puesto.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos personales -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-person-vcard me-1"></i> Datos personales
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Nombre</label>
+            {{ form.nombre }}
+            {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Apellido</label>
+            {{ form.apellido }}
+            {% if form.apellido.errors %}<div class="text-danger small">{{ form.apellido.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Teléfono</label>
+            {{ form.telefono }}
+            {% if form.telefono.errors %}<div class="text-danger small">{{ form.telefono.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div class="text-danger small">{{ form.email.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-8">
+            <label class="form-label">Dirección</label>
+            {{ form.direccion }}
+            {% if form.direccion.errors %}<div class="text-danger small">{{ form.direccion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Foto</label>
+            {{ form.foto }}
+            {% if form.foto.errors %}<div class="text-danger small">{{ form.foto.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Organización -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-header bg-light fw-semibold">
+        <i class="bi bi-building me-1"></i> Organización e Información Salarial
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label">Departamento</label>
+            {{ form.departamento }}
+            {% if form.departamento.errors %}<div class="text-danger small">{{ form.departamento.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label">Área</label>
+            {{ form.area }}
+            {% if form.area.errors %}<div class="text-danger small">{{ form.area.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label">Sección</label>
+            {{ form.seccion }}
+            {% if form.seccion.errors %}<div class="text-danger small">{{ form.seccion.errors }}</div>{% endif %}
+          </div>
+          <div class="col-12 col-md-12 col-lg-3">
+            <label class="form-label fw-bold">Salario Base Mensual</label>
+            <div class="input-group">
+              <span class="input-group-text">FCFA</span>
+              <input type="text" name="salario_base" id="id_salario_base" class="form-control" 
+                     value="{{ form.salario_base.value|default_if_none:0|floatformat:0|intcomma }}">
+            </div>
+            {% if form.salario_base.errors %}<div class="text-danger small">{{ form.salario_base.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-12 col-md-6">
+            <div class="form-check">
+              {{ form.activo }}
+              <label class="form-check-label ms-1">Empleado activo</label>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 text-end">
+            <button class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>{% if modo == "crear" %}Guardar empleado{% else %}Actualizar{% endif %}
+            </button>
+            <a href="{% url 'empleados:list' %}" class="btn btn-outline-secondary ms-2">
+              <i class="bi bi-x-circle me-1"></i>Cancelar
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

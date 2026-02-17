@@ -1,0 +1,22 @@
+[
+    {
+        "doc_id": "99988877",
+        "nombre": "Candidato Importado 1",
+        "apellido": "Test Json",
+        "email": "import1@test.com",
+        "telefono": "555-0001",
+        "skills": "Python, Django",
+        "titulaciones": "Ingeniero de Software",
+        "nota": "Candidato de prueba importado"
+    },
+    {
+        "doc_id": "99988878",
+        "nombre": "Candidato Importado 2",
+        "apellido": "Test Json",
+        "email": "import2@test.com",
+        "telefono": "555-0002",
+        "skills": "React, JavaScript",
+        "titulaciones": "Desarrollador Web",
+        "nota": "Otro candidato de prueba"
+    }
+]

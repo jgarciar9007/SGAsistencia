@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Registrar Baja Autorizada</h1>
+            <p class="text-muted">Empleado: {{ emp.nombre_completo }}</p>
+        </div>
+        <a href="{% url 'empleados:detalle' emp.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha de Inicio</label>
+                            {{ form.fecha_inicio }}
+                            {% if form.fecha_inicio.errors %}
+                                <div class="invalid-feedback d-block">{{ form.fecha_inicio.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha de Fin</label>
+                            {{ form.fecha_fin }}
+                            {% if form.fecha_fin.errors %}
+                                <div class="invalid-feedback d-block">{{ form.fecha_fin.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tipo de Baja</label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descripción / Motivo</label>
+                            {{ form.descripcion }}
+                            {% if form.descripcion.errors %}
+                                <div class="invalid-feedback d-block">{{ form.descripcion.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-calendar-plus me-2"></i>Guardar Baja
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i>Información útil</h5>
+                    <p>Las bajas autorizadas permiten justificar ausencias en los reportes de asistencia.</p>
+                    <ul>
+                        <li><strong>Vacaciones:</strong> Periodos de descanso programados.</li>
+                        <li><strong>Enfermedad:</strong> Bajas con justificante médico.</li>
+                        <li><strong>Permiso Personal:</strong> Ausencias autorizadas por otros motivos.</li>
+                    </ul>
+                    <p class="mb-0 text-muted small">Al calcular las ausencias, los días dentro de este rango se marcarán específicamente como "Baja Autorizada".</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

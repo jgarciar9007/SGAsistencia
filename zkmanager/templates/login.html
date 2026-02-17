@@ -1,0 +1,104 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>GestHR · Acceso</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <style>
+    :root{
+      --cndes:#FFFFF;   /* verde principal */
+      --cndes-dark:#117A40;
+    }
+    body{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--cndes);
+    }
+    .card{
+      border:none;
+      border-radius:1rem;
+      overflow:hidden;
+      width:100%;
+      max-width:460px;
+    }
+    /* Franja verde con texto blanco */
+    .brand{
+      background:var(--cndes-dark);
+      color:#fff;
+      text-align:center;
+      padding:.9rem 1rem;
+    }
+    .brand h1{
+      font-size:1.3rem;
+      margin:0;
+      font-weight:700;
+      letter-spacing:.5px;
+    }
+    /* Logo superior fuera de la tarjeta */
+    .logo-top{
+      position:absolute;
+      top:15%;
+      left:50%;
+      transform:translateX(-50%);
+      text-align:center;
+    }
+    .logo-top img{
+      height:120px;
+      width:auto;
+    }
+    .btn-login{ background:var(--cndes-dark); border:0; }
+    .btn-login:hover{ background:#0f6a37; }
+    .form-control{ border-radius:.6rem; }
+    a.muted{ color:#fff; opacity:.9; text-decoration:none; }
+    a.muted:hover{ opacity:1; text-decoration:underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Logo centrado arriba -->
+  <div class="logo-top">
+    <img src="{% static 'img/logo.png' %}" alt="CNDES">
+  </div>
+
+  <div class="card shadow-lg">
+    <!-- Franja verde -->
+    <div class="brand">
+      <h1>GestHR</h1>
+    </div>
+
+    <!-- Cuerpo blanco -->
+    <div class="card-body bg-white">
+      {% if form.errors %}
+        <div class="alert alert-danger">Usuario o contraseña inválidos.</div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}" id="login-form" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Nombre de usuario</label>
+          <input class="form-control" type="text" name="username" autofocus required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <input class="form-control" type="password" name="password" required>
+        </div>
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button class="btn btn-login w-100 text-white" type="submit">
+          <i class="bi bi-box-arrow-in-right me-1"></i> Iniciar sesión
+        </button>
+      </form>
+    </div>
+
+    <div class="text-center py-3">
+      <a class="muted small" href="/">Volver al sitio</a>
+    </div>
+  </div>
+
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

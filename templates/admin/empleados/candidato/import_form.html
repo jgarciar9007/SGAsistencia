@@ -1,0 +1,47 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url 'admin:empleados_candidato_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; Importar JSON
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <form action="." method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            {% if form.errors %}
+                <p class="errornote">
+                    {% if form.errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+                </p>
+                {{ form.non_field_errors }}
+            {% endif %}
+            
+            <fieldset class="module aligned">
+                <div class="form-row">
+                    <div>
+                        <label for="{{ form.json_file.id_for_label }}" class="required">{{ form.json_file.label }}:</label>
+                        {{ form.json_file }}
+                        <p class="help">Sube un archivo JSON con una lista de candidatos. Campos esperados: doc_id (requerido), nombre, apellido, email, telefono, skills, titulaciones, nota.</p>
+                        {{ form.json_file.errors }}
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="submit-row">
+                <input type="submit" value="Importar" class="default" name="_save">
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

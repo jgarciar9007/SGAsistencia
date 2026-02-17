@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>{% if modo == 'crear' %}Nuevo{% else %}Editar{% endif %} dispositivo</h1>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
+      {{ form.as_p }}
+    </div>
+    <p style="margin-top:12px">
+      <button class="btn" type="submit">Guardar</button>
+      <a class="btn sec" href="{% url 'config:index' %}">Cancelar</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

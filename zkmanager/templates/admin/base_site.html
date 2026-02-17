@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}GestHR · Admin{% endblock %}
+
+{% block branding %}
+  <div id="site-name" class="d-flex align-items-center gap-2">
+    <img src="{% static 'img/logo.png' %}" alt="Logo" style="height:28px;width:auto;">
+    <span>GestHR · Administración</span>
+  </div>
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {# opcional: tu css #}
+  {# <link rel="stylesheet" href="{% static 'css/admin.css' %}"> #}
+{% endblock %}

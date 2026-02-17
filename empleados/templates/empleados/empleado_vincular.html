@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Vincular Dispositivo y Usuario</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Empleado: <strong>{{ emp.nombre_completo }}</strong></p>
+                    <hr>
+                    <form method="post" id="linkForm" class="row g-3">
+                        {% csrf_token %}
+                        <div class="col-12">
+                            <label class="form-label">Dispositivo</label>
+                            {{ form.dispositivo }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Usuario en el Equipo</label>
+                            {{ form.usuario }}
+                        </div>
+                        
+                        <div class="col-12 mt-4 d-flex justify-content-end gap-2">
+                            <a href="{% url 'empleados:detalle' emp.id %}" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Vincular</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dispSelect = document.getElementById("id_dispositivo");
+        const userSelect = document.getElementById("id_usuario");
+        const url = "{% url 'empleados:ajax_load_users' %}";
+
+        dispSelect.addEventListener("change", function() {
+            const dispositivoId = this.value;
+            
+            userSelect.innerHTML = '<option value="">Cargando...</option>';
+            
+            fetch(`${url}?dispositivo=${dispositivoId}`)
+                .then(response => response.text())
+                .then(html => {
+                    userSelect.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error("Error loading users:", error);
+                    userSelect.innerHTML = '<option value="">Error al cargar</option>';
+                });
+        });
+        
+        // Trigger change on load if value exists
+        if (dispSelect.value) {
+           dispSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{% endblock %}

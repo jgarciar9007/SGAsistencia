@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-x-circle me-2"></i>Desactivar Usuario</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        ¿Estás seguro de que deseas desactivar al usuario <strong>{{ usuario.username }}</strong>?
+                    </div>
+
+                    <p class="text-muted">
+                        El usuario no podrá iniciar sesión hasta que sea reactivado.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{% url 'usuarios:listar' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-x-circle me-1"></i>Desactivar Usuario
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

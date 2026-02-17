@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Filtro de fecha -->
+<form class="row g-2 align-items-end mb-3" method="get">
+  <div class="col-auto">
+    <label class="form-label mb-1">Fecha</label>
+    <input type="date" name="fecha" value="{{ fecha }}" class="form-control">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-primary">
+      <i class="bi bi-funnel me-1"></i>Aplicar
+    </button>
+  </div>
+
+</form>
+
+  <h3 class="mb-3">Panel de Control — {{ fecha }}</h3>
+
+  <!-- Tarjetas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card text-bg-primary h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-person-lines-fill fs-2"></i>
+          <h5 class="mt-2">Empleados activos</h5>
+          <h2 class="mb-0">{{ empleados_total }}</h2>
+          <a href="{% url 'reportes:dashboard_listado' 'activos' %}?fecha={{ fecha }}"
+   target="_blank"
+   class="btn btn-sm btn-light mt-2 d-print-none">
+  <i class="bi bi-box-arrow-up-right me-1"></i>Exportar listado
+</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-success h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-fingerprint fs-2"></i>
+          <h5 class="mt-2">Firmaron</h5>
+          <h2 class="mb-0">{{ firmaron_hoy }}</h2>
+          <a href="{% url 'reportes:dashboard_listado' 'firmaron' %}?fecha={{ fecha }}"
+   target="_blank"
+   class="btn btn-sm btn-light mt-2 d-print-none">
+  <i class="bi bi-box-arrow-up-right me-1"></i>Exportar listado
+</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-warning h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-person-x fs-2"></i>
+          <h5 class="mt-2">No firmaron</h5>
+          <h2 class="mb-0">{{ no_firmaron_hoy }}</h2>
+          <a href="{% url 'reportes:dashboard_listado' 'nofirmaron' %}?fecha={{ fecha }}"
+   target="_blank"
+   class="btn btn-sm btn-light mt-2 d-print-none">
+  <i class="bi bi-box-arrow-up-right me-1"></i>Exportar listado
+</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-bg-danger h-100 shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-clock-history fs-2"></i>
+          <h5 class="mt-2">Llegadas tarde</h5>
+          <h2 class="mb-0">{{ llegadas_tarde }}</h2>
+          
+          <a href="{% url 'reportes:dashboard_listado' 'tarde' %}?fecha={{ fecha }}"
+   target="_blank"
+   class="btn btn-sm btn-light mt-2 d-print-none">
+  <i class="bi bi-box-arrow-up-right me-1"></i>Exportar listado
+</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico mensual -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <strong>Asistencia mensual</strong>
+      <span class="text-muted small">
+        {{ fecha|date:"F Y" }}
+      </span>
+    </div>
+    <div class="card-body">
+      <canvas id="graficoMes" height="110"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- JS Chart -->
+<script src="{% static 'vendor/chart.js/chart.umd.min.js' %}"></script>
+<script>
+  const ctx = document.getElementById('graficoMes');
+  const labels = {{ dias|safe }};
+  const data   = {{ totales|safe }};
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Firmantes por día',
+        data: data,
+        fill: true,
+        tension: 0.3,
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13,110,253,0.2)',
+        pointRadius: 3,
+      }]
+    },
+    options: {
+      scales: { y: { beginAtZero: true, precision: 0 } }
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,374 @@
+{% load static %}
+<!doctype html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GestHR</title>
+
+  <!-- CSS locales -->
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+
+  <style>
+    :root {
+      --sidebar-width: 260px;
+      --sidebar-collapsed-width: 70px;
+      --header-height: 56px;
+      --primary-color: #0d6efd;
+    }
+    
+    body { 
+      min-height: 100vh; 
+      background-color: #f4f6f9; 
+      overflow-x: hidden;
+    }
+    
+    .app-shell { 
+      display: flex; 
+      min-height: calc(100vh - var(--header-height)); 
+      margin-top: var(--header-height);
+    }
+
+    /* SIDEBAR */
+    .sidebar { 
+      width: var(--sidebar-width); 
+      background: #fff; 
+      border-right: 1px solid #dee2e6;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - var(--header-height));
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      z-index: 1000;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .content { 
+      flex: 1; 
+      padding: 1.5rem; 
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.3s ease;
+      background-color: #f4f6f9;
+      width: calc(100% - var(--sidebar-width));
+    }
+
+    /* SIDEBAR COLLAPSED (Desktop) */
+    .sidebar.collapsed {
+      width: var(--sidebar-collapsed-width);
+    }
+    
+    /* Ajuste del contenido cuando el sidebar está colapsado */
+    body.sb-collapsed .content {
+      margin-left: var(--sidebar-collapsed-width);
+      width: calc(100% - var(--sidebar-collapsed-width));
+    }
+
+    /* Elementos ocultos al colapsar */
+    .sidebar.collapsed .nav-link span,
+    .sidebar.collapsed .nav-section-title span,
+    .sidebar.collapsed .bi-chevron-down,
+    .sidebar.collapsed .input-group,
+    .sidebar.collapsed .nav-section-title {
+      display: none !important;
+    }
+
+    .sidebar.collapsed .nav-link {
+      text-align: center;
+      padding-left: 0;
+      padding-right: 0;
+      justify-content: center !important;
+    }
+
+    .sidebar.collapsed .nav-link i {
+      margin-right: 0 !important;
+      font-size: 1.2rem;
+    }
+
+    .sidebar.collapsed .submenu {
+      display: none !important;
+    }
+
+    /* ESTILOS LINK */
+    .sidebar .nav-link { 
+      color: #495057; 
+      padding: 0.75rem 1rem; 
+      border-radius: 0;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .sidebar .nav-link:hover { 
+      background-color: #e9ecef; 
+      color: #000;
+    }
+    .sidebar .nav-link.active { 
+      background-color: #e7f1ff; 
+      color: var(--primary-color);
+      border-right: 3px solid var(--primary-color);
+      font-weight: 500;
+    }
+
+    .submenu .nav-link { 
+      padding-left: 2.75rem; 
+      font-size: 0.9rem; 
+      background-color: #fdfdfd;
+    }
+    .submenu .nav-link:hover {
+      background-color: #f1f3f5;
+    }
+
+    .nav-section-title {
+      text-transform: uppercase;
+      font-size: .7rem;
+      font-weight: 700;
+      color: #adb5bd;
+      margin: 1.5rem 1rem 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* MOBILE OVERRIDES */
+    @media (max-width: 991.98px) {
+      .sidebar { 
+        transform: translateX(-100%);
+        width: var(--sidebar-width); /* En móvil siempre ancho completo al abrir */
+      }
+      .sidebar.show { 
+        transform: none; 
+      }
+      .content { 
+        margin-left: 0 !important; 
+        width: 100% !important;
+      }
+      body.sb-collapsed .content {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+      /* Desactivar colapso en móvil, siempre se ve full o nada */
+      .sidebar.collapsed {
+        width: var(--sidebar-width);
+      }
+      .sidebar.collapsed .nav-link span,
+      .sidebar.collapsed .nav-section-title,
+      .sidebar.collapsed .submenu {
+        display: block !important; /* Restaurar visibilidad si estaba guardado como colapsado */
+      }
+      .sidebar.collapsed .nav-link {
+        justify-content: flex-start !important;
+        padding: 0.75rem 1rem;
+      }
+      .sidebar.collapsed .nav-link i {
+        margin-right: 0.5rem !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV SUPERIOR -->
+  <nav class="navbar navbar-dark bg-dark fixed-top px-3 shadow-sm">
+      <div class="d-flex align-items-center">
+        <!-- Toggle Button (Mobile) -->
+        <button class="btn btn-outline-light d-lg-none me-2 border-0" id="btnSidebarMobile" type="button">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        
+        <!-- Toggle Button (Desktop) -->
+        <button class="btn btn-outline-light d-none d-lg-block me-3 border-0" id="btnSidebarDesktop" type="button">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+
+        <a class="navbar-brand fw-bold tracking-tight" href="/dashboard/">GEST<span class="text-primary">HR</span></a>
+      </div>
+
+      <div class="d-flex align-items-center gap-3">
+        <a class="btn btn-sm btn-outline-secondary d-none d-md-flex align-items-center text-light border-0" href="/dashboard/">
+          <i class="bi bi-speedometer2 me-2"></i>Dashboard
+        </a>
+        {% if request.user.is_staff %}
+          <a class="btn btn-sm btn-warning fw-semibold shadow-sm" href="/admin/" target="_blank">
+            <i class="bi bi-gear-fill me-1"></i>Admin
+          </a>
+        {% endif %}
+        
+        <div class="dropdown">
+          <button class="btn btn-sm btn-dark dropdown-toggle d-flex align-items-center gap-2 border-0 bg-transparent" data-bs-toggle="dropdown">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                {{ request.user.username|make_list|first|upper }}
+            </div>
+            <span class="d-none d-sm-inline">{{ request.user.username|default:"Usuario" }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+            <li><h6 class="dropdown-header">Cuenta</h6></li>
+            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Perfil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión</a></li>
+          </ul>
+        </div>
+      </div>
+  </nav>
+
+  <!-- ESTRUCTURA -->
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar shadow-sm">
+      <div class="p-3">
+        <!-- Search solo visible si no está colapsado -->
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input class="form-control bg-light border-start-0" placeholder="Buscar…">
+        </div>
+      </div>
+
+      <nav class="nav flex-column flex-grow-1">
+        <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="/dashboard/">
+          <i class="bi bi-speedometer2 me-2"></i><span>Dashboard</span>
+        </a>
+
+        <!-- CONFIG -->
+        <div class="nav-section-title"><span>Administración</span></div>
+        
+        <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#mConfig">
+          <div class="d-flex align-items-center"><i class="bi bi-hdd-network me-2"></i><span>Configuración</span></div>
+          <i class="bi bi-chevron-down small"></i>
+        </a>
+        <div class="collapse show submenu" id="mConfig">
+          <a class="nav-link" href="/config/"><i class="bi bi-hdd-stack me-2"></i><span>Dispositivos</span></a>
+          <a class="nav-link" href="/config/usuarios/"><i class="bi bi-people me-2"></i><span>Usuarios equipo</span></a>
+          <a class="nav-link" href="/empleados/"><i class="bi bi-person-badge me-2"></i><span>Empleados</span></a>
+          <a class="nav-link" href="{% url 'empleados:candidato_list' %}"><i class="bi bi-person-lines-fill me-2"></i><span>Candidatos</span></a>
+        </div>
+
+        <a class="nav-link d-flex justify-content-between align-items-center mt-1" data-bs-toggle="collapse" href="#mAsist">
+          <div class="d-flex align-items-center"><i class="bi bi-fingerprint me-2"></i><span>Asistencias</span></div>
+          <i class="bi bi-chevron-down small"></i>
+        </a>
+        <div class="collapse show submenu" id="mAsist">
+          <a class="nav-link" href="{% url 'reportes:asistencia_general' %}">
+            <i class="bi bi-table me-2"></i><span>Reporte Diario</span>
+          </a>
+          <a class="nav-link" href="{% url 'reportes:ausencias' %}">
+            <i class="bi bi-person-x me-2"></i><span>Reporte Ausencias</span>
+          </a>
+        </div>
+
+        <!-- REPORTES -->
+        <div class="nav-section-title"><span>Reportes PDF</span></div>
+
+        <!-- Submenú: Reportes generales -->
+        <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#mRepGenerales">
+             <div class="d-flex align-items-center"><i class="bi bi-file-earmark-bar-graph me-2"></i><span>Generales</span></div>
+             <i class="bi bi-chevron-down small"></i>
+        </a>
+        <div class="collapse submenu" id="mRepGenerales">
+            <a class="nav-link" href="{% url 'reportes:nomina_horas_form' %}">
+                <i class="bi bi-clock-history me-2"></i><span>Horas trabajadas</span>
+            </a>
+            <a class="nav-link" href="{% url 'reportes:ausencias_totales_form' %}">
+                <i class="bi bi-calendar-x me-2"></i><span>Ausencias Total</span>
+            </a>
+            <a class="nav-link" href="{% url 'reportes:solo_entrada_form' %}">
+                <i class="bi bi-person-check me-2"></i><span>Solo Entrada</span>
+            </a>
+        </div>
+
+        <!-- Submenú: Reportes por trabajador -->
+        <a class="nav-link d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#mRepTrabajador">
+             <div class="d-flex align-items-center"><i class="bi bi-person-vcard me-2"></i><span>Individuales</span></div>
+             <i class="bi bi-chevron-down small"></i>
+        </a>
+        <div class="collapse submenu" id="mRepTrabajador">
+            <a class="nav-link" href="{% url 'reportes:rep_empleado_form' %}">
+            <i class="bi bi-person-lines-fill me-2"></i><span>Asistencia Indiv.</span>
+            </a>
+            <a class="nav-link" href="{% url 'reportes:rep_ausencias_empleado_form' %}">
+            <i class="bi bi-calendar-x me-2"></i><span>Ausencias Indiv.</span>
+            </a>
+        </div>
+        <!-- NÓMINA -->
+        <div class="nav-section-title"><span>Nómina</span></div>
+        <a class="nav-link" href="{% url 'reportes:nomina_calculo_form' %}">
+            <i class="bi bi-wallet2 me-2"></i><span>Cálculo Salarial</span>
+        </a>
+        <a class="nav-link" href="{% url 'reportes:nomina_archivo' %}">
+            <i class="bi bi-archive me-2"></i><span>Histórico</span>
+        </a>
+         
+      </nav>
+      
+      <div class="p-3 text-center border-top bg-light">
+        <small class="text-muted" style="font-size: 0.7rem">v1.2.0</small>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO -->
+    <main class="content">
+      {% if messages %}
+        <div class="mb-4">
+          {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} shadow-sm border-0 d-flex align-items-center" role="alert">
+              <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+              <div>{{ message }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- JS locales -->
+  <script src="{% static 'vendor/bootstrap/bootstrap.bundle.min.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body;
+        
+        // --- MOBILE TOGGLE ---
+        const btnMobile = document.getElementById('btnSidebarMobile');
+        if (btnMobile) {
+            btnMobile.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+            });
+            
+            // Cerrar al hacer click fuera o en un link (en móvil)
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth < 992) {
+                    if (!sidebar.contains(e.target) && !btnMobile.contains(e.target) && sidebar.classList.contains('show')) {
+                        sidebar.classList.remove('show');
+                    }
+                }
+            });
+        }
+
+        // --- DESKTOP TOGGLE ---
+        const btnDesktop = document.getElementById('btnSidebarDesktop');
+        if (btnDesktop) {
+            
+            // Cargar estado inicial
+            const savedState = localStorage.getItem('sidebar_collapsed');
+            if (savedState === 'true') {
+                sidebar.classList.add('collapsed');
+                body.classList.add('sb-collapsed');
+            }
+
+            btnDesktop.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                body.classList.toggle('sb-collapsed');
+                
+                // Guardar estado
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebar_collapsed', isCollapsed);
+            });
+        }
+    });
+  </script>
+</body>
+</html>

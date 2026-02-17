@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Reporte diario de asistencia</h2>
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-3">
+      <input type="date" name="desde" value="{{ desde }}" class="form-control" placeholder="Desde">
+    </div>
+    <div class="col-md-3">
+      <input type="date" name="hasta" value="{{ hasta }}" class="form-control" placeholder="Hasta">
+    </div>
+    <div class="col-md-3">
+      <input name="user_id" value="{{ user_id }}" class="form-control" placeholder="Usuario">
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-primary w-100" type="submit">Filtrar</button>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+  <tr>
+    <th>Fecha</th>
+    <th>Nombre</th>
+    <th>Entrada</th>
+    <th>Salida</th>
+    <th>Horas</th>
+    <th>Dispositivo</th>
+  </tr>
+</thead>
+<tbody>
+  {% for r in page_obj.object_list %}
+  <tr>
+    <td>{{ r.fecha }}</td>
+    <td>{{ r.nombre }}</td>
+    <td>{{ r.entrada }}</td>
+    <td>{{ r.salida }}</td>
+    <td>{{ r.total_horas }}</td>
+    <td>{{ r.dispositivo }}</td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6" class="text-center">Sin registros.</td></tr>
+  {% endfor %}
+</tbody>
+
+    </table>
+  </div>
+
+  <nav>
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&desde={{ desde }}&hasta={{ hasta }}&user_id={{ user_id }}">Anterior</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&desde={{ desde }}&hasta={{ hasta }}&user_id={{ user_id }}">Siguiente</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container py-4">
+  <h4 class="mb-3"><i class="bi bi-file-earmark-pdf me-2"></i>Asistencia por trabajador</h4>
+
+  <form class="row gy-3" method="get" action="{% url 'reportes:rep_empleado_pdf' %}" target="_blank">
+    <div class="col-12 col-md-5">
+      <label class="form-label">Empleado / Usuario</label>
+      <select name="empleado" class="form-select" required>
+        <option value="">Seleccione…</option>
+        {% for p in personas %}
+          <option value="{{ p.value }}">{{ p.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <label class="form-label">Inicio</label>
+      <input type="date" name="inicio" class="form-control" value="{{ inicio|date:'Y-m-d' }}">
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label">Fin</label>
+      <input type="date" name="fin" class="form-control" value="{{ fin|date:'Y-m-d' }}">
+    </div>
+
+    <div class="col-12 col-md-1 d-flex align-items-end">
+      <button type="submit" class="btn btn-danger w-100">
+        <i class="bi bi-filetype-pdf me-1"></i>PDF
+      </button>
+    </div>
+  </form>
+
+  <div class="text-muted mt-3">
+    El PDF lista cada día del período con la hora de entrada, salida y el total del día.
+    Si un día solo tiene un marcaje, la salida queda en blanco y el total es 00:00.
+  </div>
+</div>
+{% endblock %}

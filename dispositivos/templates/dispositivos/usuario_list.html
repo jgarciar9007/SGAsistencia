@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Usuarios de dispositivos</h2>
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-3">
+      <input name="q" value="{{ q }}" class="form-control" placeholder="Buscar por ID, nombre o dispositivo">
+    </div>
+    <div class="col-md-3">
+      <select name="dispositivo" class="form-select">
+        <option value="">Todos los dispositivos</option>
+        {% for d in dispositivos %}
+          <option value="{{ d.id }}" {% if dispositivo_sel == d.id %}selected{% endif %}>{{ d.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="activo" class="form-select">
+        <option value="" {% if not activo %}selected{% endif %}>Todos</option>
+        <option value="1" {% if activo == "1" %}selected{% endif %}>Activos</option>
+        <option value="0" {% if activo == "0" %}selected{% endif %}>Inactivos</option>
+      </select>
+    </div>
+    <div class="col-md-4 d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary"
+         href="{% url 'config:usuario_export_csv' %}?q={{ q }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}">
+         CSV
+      </a>
+    </div>
+  </form>
+
+  <div class="mb-2">
+    <small>Total filtrado: {{ total }}</small>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Dispositivo</th>
+          <th>User ID</th>
+          <th>Nombre</th>
+          <th>UID</th>
+          <th>Privilegio</th>
+          <th>Grupo</th>
+          <th>Activo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in page_obj.object_list %}
+        <tr>
+          <td>{{ u.dispositivo.nombre }}</td>
+          <td>{{ u.user_id }}</td>
+          <td>{{ u.nombre }}</td>
+          <td>{{ u.uid|default:"" }}</td>
+          <td>{{ u.privilegio|default:"" }}</td>
+          <td>{{ u.grupo_id|default:"" }}</td>
+          <td>{{ u.activo|yesno:"Sí,No" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Sin usuarios.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <nav>
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}">Anterior</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}{% if activo %}&activo={{ activo }}{% endif %}">Siguiente</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}

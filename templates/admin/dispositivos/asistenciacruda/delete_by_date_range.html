@@ -1,0 +1,58 @@
+{% extends "admin/base_site.html" %}
+{% load i18n l10n admin_urls static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media }}
+    <style>
+        .range-form { margin: 20px 0; padding: 20px; border: 1px solid #eee; background: #fff; }
+        .range-row { display: flex; align-items: center; margin-bottom: 15px; }
+        .range-row label { width: 150px; font-weight: bold; }
+        .range-warning { color: #ba2121; margin-top: 10px; font-weight: bold; }
+    </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% translate 'Delete by date range' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="range-form">
+    <h2>{% translate "Delete Attendance Records by Date Range" %}</h2>
+    <p>{% translate "Select the period for which you want to DELETE attendance records. This action cannot be undone." %}</p>
+
+    <form action="" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_by_date_range">
+        <!-- We need to keep the selected objects to satisfy the action mechanism, even if we ignore them -->
+        {% for obj in queryset %}
+            <input type="hidden" name="_selected_action" value="{{ obj.pk|unlocalize }}" />
+        {% endfor %}
+        <input type="hidden" name="apply" value="1">
+
+        <div class="range-row">
+            <label for="start_date">{% translate "Start Date" %}:</label>
+            <input type="date" id="start_date" name="start_date" required>
+        </div>
+
+        <div class="range-row">
+            <label for="end_date">{% translate "End Date" %}:</label>
+            <input type="date" id="end_date" name="end_date" required>
+        </div>
+
+        <div class="range-warning">
+            {% translate "Warning: All attendance records within this range will be permanently deleted." %}
+        </div>
+
+        <div class="submit-row">
+            <input type="submit" value="{% translate 'Delete Records' %}" class="default" style="background: #ba2121;">
+            <a href="#" onclick="window.history.back(); return false;" class="button cancel-link">{% translate "Cancel" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

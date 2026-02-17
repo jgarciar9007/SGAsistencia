@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="h3 m-0">Dispositivos biométricos</h2>
+      <a href="{% url 'config:dispositivo_crear' %}" class="btn btn-primary">Nuevo dispositivo</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Nombre</th>
+            <th>IP</th>
+            <th>Puerto</th>
+            <th>Protocolo</th>
+            <th>Ubicación</th>
+            <th>Activo</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in dispositivos %}
+          <tr>
+            <td>{{ d.nombre }}</td>
+            <td>{{ d.ip }}</td>
+            <td>{{ d.puerto }}</td>
+            <td>{{ d.get_protocolo_display }}</td>
+            <td>{{ d.ubicacion|default:"—" }}</td>
+            <td>{{ d.activo|yesno:"Sí,No" }}</td>
+            <td class="text-end">
+              <form action="{% url 'config:dispositivo_probar' d.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-primary">Probar conexión</button>
+              </form>
+              <form action="{% url 'config:descargar_usuarios' d.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-dark">Descargar usuarios</button>
+              </form>
+              <form action="{% url 'config:descargar_asistencia' d.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-secondary">Descargar asistencia</button>
+              </form>
+              <a class="btn btn-sm btn-outline-info" href="{% url 'config:dispositivo_editar' d.id %}">Editar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted">Sin dispositivos</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

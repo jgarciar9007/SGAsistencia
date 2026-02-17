@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Asistencia cruda</h2>
+
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-md-3">
+      <input name="q" value="{{ q }}" class="form-control" placeholder="Buscar usuario o dispositivo">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="desde" value="{{ desde }}" class="form-control" placeholder="Desde">
+    </div>
+    <div class="col-md-2">
+      <input type="date" name="hasta" value="{{ hasta }}" class="form-control" placeholder="Hasta">
+    </div>
+    <div class="col-md-3">
+      <select name="dispositivo" class="form-select">
+        <option value="">Todos los dispositivos</option>
+        {% for d in dispositivos %}
+          <option value="{{ d.id }}" {% if dispositivo_sel == d.id %}selected{% endif %}>{{ d.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-primary w-100" type="submit">Filtrar</button>
+      <a class="btn btn-outline-secondary" href="{% url 'config:asistencia_export_csv' %}?q={{ q }}&desde={{ desde }}&hasta={{ hasta }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}">CSV</a>
+    </div>
+  </form>
+
+  <div class="mb-2">
+    <small>Total filtrado: {{ total }}</small>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Fecha/hora (UTC)</th>
+          <th>Usuario</th>
+          <th>Dispositivo</th>
+          <th>Status</th>
+          <th>Punch</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in page_obj.object_list %}
+        <tr>
+          <td>{{ r.ts }}</td>
+          <td>{{ r.user_id }}</td>
+          <td>{{ r.dispositivo.nombre }}</td>
+          <td>{{ r.status }}</td>
+          <td>{{ r.punch|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Sin registros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <nav>
+    <ul class="pagination">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&desde={{ desde }}&hasta={{ hasta }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}">Anterior</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&desde={{ desde }}&hasta={{ hasta }}{% if dispositivo_sel %}&dispositivo={{ dispositivo_sel }}{% endif %}">Siguiente</a></li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endblock %}
