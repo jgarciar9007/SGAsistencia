@@ -33,7 +33,7 @@
           <select name="departamento" class="form-select">
             <option value="">Todos los departamentos</option>
             {% for d in departamentos %}
-            <option value="{{ d }}" {% if depto_sel==d %}selected{% endif %}>{{ d }}</option>
+            <option value="{{ d }}" {% if depto_sel == d %}selected{% endif %}>{{ d }}</option>
             {% endfor %}
           </select>
         </div>
