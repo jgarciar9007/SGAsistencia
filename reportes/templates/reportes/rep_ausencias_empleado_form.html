@@ -2,38 +2,54 @@
 {% load static %}
 {% block content %}
 <div class="container py-4">
-  <h4 class="mb-3"><i class="bi bi-file-earmark-pdf me-2"></i>Ausencias por trabajador</h4>
 
-  <form class="row gy-3" method="get" action="{% url 'reportes:rep_ausencias_empleado_pdf' %}" target="_blank">
-    <div class="col-12 col-md-5">
-      <label class="form-label">Empleado / Usuario</label>
-      <select name="empleado" class="form-select" required>
-        <option value="">Seleccione…</option>
-        {% for p in personas %}
-          <option value="{{ p.value }}">{{ p.label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-6 col-md-3">
-      <label class="form-label">Inicio</label>
-      <input type="date" name="inicio" class="form-control" value="{{ inicio|date:'Y-m-d' }}">
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label">Fin</label>
-      <input type="date" name="fin" class="form-control" value="{{ fin|date:'Y-m-d' }}">
-    </div>
-
-    <div class="col-12 col-md-1 d-flex align-items-end">
-      <button type="submit" class="btn btn-danger w-100">
-        <i class="bi bi-filetype-pdf me-1"></i>PDF
-      </button>
-    </div>
-  </form>
-
-  <div class="text-muted mt-3">
-    El reporte muestra, para el trabajador seleccionado, los días <strong>laborables (lunes a viernes)</strong>
-    del período en los que no existe ningún marcaje de asistencia.
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h4 mb-0"><i class="bi bi-calendar-x me-2"></i>Ausencias Individuales</h2>
+    <span class="badge text-bg-secondary"><i class="bi bi-filetype-pdf me-1"></i>Genera PDF</span>
   </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-light border-bottom">
+      <strong class="text-muted small text-uppercase">Parámetros del reporte</strong>
+    </div>
+    <div class="card-body p-4">
+      <form class="row g-3 align-items-end" method="get" action="{% url 'reportes:rep_ausencias_empleado_pdf' %}"
+        target="_blank">
+
+        <div class="col-12 col-md-5">
+          <label class="form-label fw-semibold">Empleado</label>
+          <select name="empleado" class="form-select" required>
+            <option value="">— Seleccione un empleado —</option>
+            {% for p in personas %}
+            <option value="{{ p.value }}">{{ p.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Desde</label>
+          <input type="date" name="inicio" class="form-control" value="{{ inicio|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold">Hasta</label>
+          <input type="date" name="fin" class="form-control" value="{{ fin|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-12 col-md-1 d-flex align-items-end">
+          <button type="submit" class="btn btn-danger w-100">
+            <i class="bi bi-filetype-pdf me-1"></i>PDF
+          </button>
+        </div>
+
+      </form>
+    </div>
+    <div class="card-footer bg-white text-muted small">
+      <i class="bi bi-info-circle me-1"></i>
+      El reporte muestra los días <strong>laborables (lunes a viernes)</strong> del período
+      en los que el empleado no tiene ningún marcaje de asistencia.
+    </div>
+  </div>
+
 </div>
 {% endblock %}
