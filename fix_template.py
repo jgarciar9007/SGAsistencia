@@ -1,3 +1,4 @@
+template = """\
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
@@ -97,3 +98,12 @@
   </nav>
 </div>
 {% endblock %}
+"""
+
+with open('reportes/templates/reportes/asistencia_general.html', 'w', encoding='utf-8') as f:
+    f.write(template)
+
+content = open('reportes/templates/reportes/asistencia_general.html', 'r', encoding='utf-8').read()
+print('depto_sel==d:', 'depto_sel==d' in content)
+print('empleado==e.id:', 'empleado==e.id' in content)
+print('OK')
