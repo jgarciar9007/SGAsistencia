@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0 pt-4 pb-0 text-center">
+                <h4 class="mb-0">{% if object %}Editar Usuario{% else %}Nuevo Usuario{% endif %}</h4>
+                <p class="text-muted small">Complete los datos del formulario.</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label text-muted small fw-bold">
+                            {{ field.label }}
+                        </label>
+                        {{ field.errors }}
+                        <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" {% if field.value %}value="{{ field.value }}"{% endif %} {% if field.field.required %}required{% endif %}>
+                        {% if field.help_text %}
+                        <div class="form-text small text-muted">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- We customize for Select boxes (groups) and Checkboxes (is_active) -->
+                    <script>
+                        // A quick fix to style the generic inputs rendered by Django
+                        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+                            el.classList.remove('form-control');
+                            el.classList.add('form-check-input');
+                            el.parentElement.classList.add('form-check', 'form-switch');
+                        });
+                        document.querySelectorAll('select').forEach(el => {
+                            el.classList.remove('form-control');
+                            el.classList.add('form-select');
+                        });
+                    </script>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> Guardar Usuario
+                        </button>
+                        <a href="{% url 'usuarios:lista' %}" class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'dispositivos',
     "empleados",
     "reportes",
+    "usuarios",
+    "django_apscheduler",
 ]
 
 MIDDLEWARE = [
@@ -64,13 +66,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'zkmanager.wsgi.application'
 
-# Base de datos SQLite
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Configuración de Base de Datos vía Entorno (con fallback a SQLite para desarrollo sin .env)
+DB_ENGINE = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
+
+if 'sqlite3' in DB_ENGINE:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': os.getenv('DB_NAME', 'asistencia'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'Cndes2026*'),
+            'HOST': os.getenv('DB_HOST', '192.168.20.3'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 # Validadores por defecto
 AUTH_PASSWORD_VALIDATORS = [

@@ -1,124 +1,81 @@
 from django import forms
-from django.contrib.auth.models import User
-from django.contrib.auth.forms import PasswordChangeForm
-from .models import PerfilUsuario
+from django.contrib.auth.models import User, Group
 
-class CrearUsuarioForm(forms.Form):
-    username = forms.CharField(
-        max_length=150,
-        label='Nombre de usuario',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    email = forms.EmailField(
-        label='Email',
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
-    first_name = forms.CharField(
-        max_length=150,
-        label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    last_name = forms.CharField(
-        max_length=150,
-        label='Apellidos',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    password = forms.CharField(
-        label='Contraseña',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    password_confirm = forms.CharField(
-        label='Confirmar contraseña',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    rol = forms.ChoiceField(
-        choices=PerfilUsuario.ROLES,
-        label='Rol',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    telefono = forms.CharField(
-        max_length=20,
-        required=False,
-        label='Teléfono',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    departamento = forms.CharField(
-        max_length=100,
-        required=False,
-        label='Departamento',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    activo = forms.BooleanField(
-        required=False,
-        initial=True,
-        label='Usuario activo',
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
-    )
+class UserCreationForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, label="Contraseña")
+    confirm_password = forms.CharField(widget=forms.PasswordInput, label="Confirmar Contraseña")
     
-    def clean_username(self):
-        username = self.cleaned_data['username']
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError('Este nombre de usuario ya existe.')
-        return username
-    
+    # Simple selection for roles (Staff or Admin, mapping to Django groups or just is_staff flag)
+    grupo = forms.ModelChoiceField(
+        queryset=Group.objects.all(), 
+        required=False, 
+        label="Rol de Usuario",
+        empty_label="--- Seleccione un Rol ---"
+    )
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
+        labels = {
+            'username': 'Nombre de Usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo Electrónico',
+            'is_active': 'Activo'
+        }
+
     def clean(self):
         cleaned_data = super().clean()
-        password = cleaned_data.get('password')
-        password_confirm = cleaned_data.get('password_confirm')
-        
-        if password and password_confirm and password != password_confirm:
-            raise forms.ValidationError('Las contraseñas no coinciden.')
-        
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if password != confirm_password:
+            self.add_error('confirm_password', "Las contraseñas no coinciden.")
         return cleaned_data
 
-class EditarUsuarioForm(forms.Form):
-    email = forms.EmailField(
-        label='Email',
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
-    first_name = forms.CharField(
-        max_length=150,
-        label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    last_name = forms.CharField(
-        max_length=150,
-        label='Apellidos',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    rol = forms.ChoiceField(
-        choices=PerfilUsuario.ROLES,
-        label='Rol',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    telefono = forms.CharField(
-        max_length=20,
-        required=False,
-        label='Teléfono',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    departamento = forms.CharField(
-        max_length=100,
-        required=False,
-        label='Departamento',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    activo = forms.BooleanField(
-        required=False,
-        label='Usuario activo',
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"])
+        if commit:
+            user.save()
+            grupo = self.cleaned_data.get('grupo')
+            if grupo:
+                user.groups.add(grupo)
+        return user
+
+
+class UserUpdateForm(forms.ModelForm):
+    grupo = forms.ModelChoiceField(
+        queryset=Group.objects.all(), 
+        required=False, 
+        label="Rol de Usuario",
+        empty_label="--- Seleccione un Rol ---"
     )
 
-class CambiarPasswordForm(PasswordChangeForm):
-    old_password = forms.CharField(
-        label='Contraseña actual',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    new_password1 = forms.CharField(
-        label='Nueva contraseña',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
-    new_password2 = forms.CharField(
-        label='Confirmar nueva contraseña',
-        widget=forms.PasswordInput(attrs={'class': 'form-control'})
-    )
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
+        labels = {
+            'username': 'Nombre de Usuario',
+            'first_name': 'Nombre',
+            'last_name': 'Apellido',
+            'email': 'Correo Electrónico',
+            'is_active': 'Activo'
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            grupo_actual = self.instance.groups.first()
+            if grupo_actual:
+                self.initial['grupo'] = grupo_actual
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            user.groups.clear()
+            grupo = self.cleaned_data.get('grupo')
+            if grupo:
+                user.groups.add(grupo)
+        return user

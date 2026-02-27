@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white pb-3 pt-3 h5 mb-0 text-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación
+            </div>
+            <div class="card-body p-4 text-center">
+                <p class="mb-4">¿Estás seguro que deseas eliminar el usuario <strong>"{{ object.username }}"</strong>?</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <button type="submit" class="btn btn-danger px-4">
+                            Sí, eliminar
+                        </button>
+                        <a href="{% url 'usuarios:lista' %}" class="btn btn-secondary px-4">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

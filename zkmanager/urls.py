@@ -22,5 +22,6 @@ urlpatterns = [
     path("config/", include(("dispositivos.urls","config"), namespace="config")),
     path("empleados/", include(("empleados.urls","empleados"), namespace="empleados")),
     path("reportes/", include("reportes.urls", namespace="reportes")),
+    path("usuarios/", include(("usuarios.urls","usuarios"), namespace="usuarios")),
     path("", dashboard),
 ]

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from empleados.models import Empleado
 
@@ -44,7 +45,6 @@ class NominaEmpleado(models.Model):
         unique_together = ["periodo", "empleado"]
 
     def save(self, *args, **kwargs):
-        from decimal import Decimal
         # Asegurar que sean Decimal para evitar TypeErrors si vienen del form como str
         sb = Decimal(str(self.salario_base or 0))
         bo = Decimal(str(self.bonos or 0))
