@@ -64,8 +64,7 @@
                             <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=nombre&order={% if sort == 'nombre' and order == 'asc' %}desc{% else %}asc{% endif %}"
                                 class="text-decoration-none text-dark d-flex align-items-center">
                                 Empleado {% if sort == 'nombre' %}<i
-                                    class="bi bi-sort-alpha-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif
-                                %}
+                                    class="bi bi-sort-alpha-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
                             </a>
                         </th>
                         <th>Departamento</th>
@@ -74,16 +73,14 @@
                             <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=ausencias&order={% if sort == 'ausencias' and order == 'asc' %}desc{% else %}asc{% endif %}"
                                 class="text-decoration-none text-dark">
                                 Ausencias {% if sort == 'ausencias' %}<i
-                                    class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif
-                                %}
+                                    class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
                             </a>
                         </th>
                         <th class="text-center pe-4">
                             <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=bajas&order={% if sort == 'bajas' and order == 'asc' %}desc{% else %}asc{% endif %}"
                                 class="text-decoration-none text-dark">
                                 Bajas {% if sort == 'bajas' %}<i
-                                    class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif
-                                %}
+                                    class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
                             </a>
                         </th>
                     </tr>
