@@ -26,7 +26,7 @@ fi
 
 # 2. Bajar los últimos cambios de Git
 echo "[2/5] Descargando últimos cambios (Git Pull)..."
-git pull origin main
+git pull origin master
 
 # 3. Instalar dependencias actualizadas
 echo "[3/5] Actualizando dependencias..."
