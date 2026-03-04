@@ -17,8 +17,12 @@
                         <label for="{{ field.id_for_label }}" class="form-label text-muted small fw-bold">
                             {{ field.label }}
                         </label>
-                        {{ field.errors }}
-                        <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" class="form-control {% if field.errors %}is-invalid{% endif %}" id="{{ field.id_for_label }}" {% if field.value %}value="{{ field.value }}"{% endif %} {% if field.field.required %}required{% endif %}>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ field.errors|striptags }}
+                        </div>
+                        {% endif %}
                         {% if field.help_text %}
                         <div class="form-text small text-muted">{{ field.help_text }}</div>
                         {% endif %}
@@ -28,15 +32,28 @@
                     <!-- We customize for Select boxes (groups) and Checkboxes (is_active) -->
                     <script>
                         // A quick fix to style the generic inputs rendered by Django
-                        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
-                            el.classList.remove('form-control');
-                            el.classList.add('form-check-input');
-                            el.parentElement.classList.add('form-check', 'form-switch');
+                        document.querySelectorAll('input, select, textarea').forEach(el => {
+                            if (el.type === 'checkbox') {
+                                el.classList.add('form-check-input');
+                                el.parentElement.classList.add('form-check', 'form-switch');
+                            } else if (el.tagName === 'SELECT') {
+                                el.classList.add('form-select');
+                            } else if (el.type !== 'hidden' && el.type !== 'submit') {
+                                el.classList.add('form-control');
+                            }
                         });
-                        document.querySelectorAll('select').forEach(el => {
-                            el.classList.remove('form-control');
-                            el.classList.add('form-select');
-                        });
+
+                        // Add is-invalid class to inputs with errors
+                        {% for field in form %}
+                            {% if field.errors %}
+                                (function() {
+                                    var fieldEl = document.getElementById('{{ field.id_for_label }}');
+                                    if (fieldEl) {
+                                        fieldEl.classList.add('is-invalid');
+                                    }
+                                })();
+                            {% endif %}
+                        {% endfor %}
                     </script>
 
                     <div class="d-grid gap-2 mt-4">

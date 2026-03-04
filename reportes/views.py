@@ -29,7 +29,7 @@ from empleados.models import Empleado, BajaAutorizada
 from .services.pdf_generator import (
     _header_pdf_story, _tabla_estilizada, 
     build_pdf_nomina_horas, build_pdf_ausencias_totales, build_pdf_solo_entrada,
-    build_pdf_reporte_empleado, build_pdf_nomina_calculo
+    build_pdf_reporte_empleado, build_pdf_nomina_calculo, build_pdf_rep_ausencias_empleado
 )
 
 
@@ -1423,74 +1423,7 @@ class RepAusenciasEmpleadoPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
         return rows, meta, total_laborables
 
     def _build_pdf(self, request, d1: date, d2: date, meta: dict, rows, total_laborables: int):
-        response = HttpResponse(content_type="application/pdf")
-        filename = f"reporte_ausencias_{meta.get('nombre','trabajador')}_{d1.strftime('%Y-%m')}.pdf"
-        response["Content-Disposition"] = f'inline; filename="{filename}"'
-
-        doc = SimpleDocTemplate(
-            response,
-            pagesize=A4,
-            leftMargin=20 * mm,
-            rightMargin=20 * mm,
-            topMargin=25 * mm,
-            bottomMargin=20 * mm,
-        )
-
-        periodo = f"PERIODO: {d1.strftime('%d/%m/%Y')}  AL  {d2.strftime('%d/%m/%Y')} (solo días laborables)"
-        usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-        story = _header_pdf_story("REPORTE DE AUSENCIAS POR TRABAJADOR", periodo, usuario)
-
-        styles = getSampleStyleSheet()
-        info_txt = (
-            f"<b>Trabajador:</b> {meta.get('nombre','').upper()} &nbsp; "
-            f"<b>Departamento:</b> {meta.get('departamento','')} &nbsp; "
-            f"<b>Tipo:</b> {meta.get('tipo','')} &nbsp; "
-            f"<b>Puesto:</b> {meta.get('puesto','')}"
-        )
-        story.append(Paragraph(info_txt, styles["Normal"]))
-        story.append(Spacer(1, 4))
-
-        total_ausencias = len(rows)
-        resumen = f"Total días de ausencia: {total_ausencias} de {total_laborables} días laborables en el período."
-        story.append(Paragraph(resumen, styles["Normal"]))
-        story.append(Spacer(1, 8))
-
-        # Tabla de días ausentes + fila TOTAL
-        body_rows = []
-        for r in rows:
-            fecha_txt = r["fecha"].strftime("%d/%m/%Y")
-            body_rows.append([fecha_txt, r["estado"]])
-
-        # Fila de totales al final
-        body_rows.append(["TOTAL", f"{total_ausencias} días"])
-
-        table = _tabla_estilizada(
-            headers=["Fecha", "Estado"],
-            rows=body_rows,
-            col_widths=[40 * mm, 80 * mm],
-            style_overrides=[
-                ("ALIGN", (0, 1), (0, -1), "LEFT"),
-                ("LEFTPADDING", (0, 1), (0, -1), 6),
-            ]
-        )
-
-        n_rows = len(body_rows)
-        last_idx = n_rows  # cabecera 0 + n_rows
-        table.setStyle(TableStyle([
-            ("FONTNAME", (0, last_idx), (1, last_idx), "Helvetica-Bold"),
-            ("BACKGROUND", (0, last_idx), (1, last_idx), colors.HexColor("#F1F3F4")),
-        ]))
-
-        story.extend(
-            [
-                table,
-                Spacer(1, 10),
-                Paragraph("Consejo Nacional para el Desarrollo Económico y Social", styles["Normal"]),
-            ]
-        )
-
-        doc.build(story)
-        return response
+        return build_pdf_rep_ausencias_empleado(request, d1, d2, meta, rows, total_laborables)
 
     def get(self, request):
         d1, d2, kind, emp_id, did, uid = self._parse_params(request)
