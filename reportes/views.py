@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from calendar import monthrange
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from typing import Dict, Iterable, List, Sequence, Tuple
 
 from django.contrib import messages
@@ -29,7 +29,8 @@ from empleados.models import Empleado, BajaAutorizada
 from .services.pdf_generator import (
     _header_pdf_story, _tabla_estilizada, 
     build_pdf_nomina_horas, build_pdf_ausencias_totales, build_pdf_solo_entrada,
-    build_pdf_reporte_empleado, build_pdf_nomina_calculo, build_pdf_rep_ausencias_empleado
+    build_pdf_reporte_empleado, build_pdf_nomina_calculo, build_pdf_rep_ausencias_empleado,
+    build_pdf_dashboard_listado, build_pdf_asistencia_general, build_pdf_ausencias_dia,
 )
 
 
@@ -503,6 +504,7 @@ class DashboardListView(LoginRequiredMixin, StaffOnlyMixin, View):
                 puesto = meta["puesto"]
 
             detalle = ""
+            observaciones = ""
             if tipo in {"firmaron", "tarde"}:
                 ts = firmas.get(key)
                 if ts:
@@ -512,6 +514,30 @@ class DashboardListView(LoginRequiredMixin, StaffOnlyMixin, View):
                         detalle += " (tarde)"
             if tipo == "nofirmaron":
                 detalle = "Sin marcaje"
+                # Buscar baja autorizada para hoy
+                emp_id_key = None
+                if meta and meta.get("empleado_id") if isinstance(meta, dict) else False:
+                    emp_id_key = meta["empleado_id"]
+                else:
+                    ud_info = info.get(key)
+                    if ud_info:
+                        # Need employee_id from UsuarioDispositivo
+                        ud_obj = UsuarioDispositivo.objects.filter(
+                            dispositivo_id=key[0], user_id=key[1]
+                        ).only("empleado_id").first()
+                        emp_id_key = ud_obj.empleado_id if ud_obj else None
+                if emp_id_key:
+                    baja = BajaAutorizada.objects.filter(
+                        empleado_id=emp_id_key,
+                        fecha_inicio__lte=fecha,
+                        fecha_fin__gte=fecha,
+                    ).first()
+                    if baja:
+                        observaciones = baja.descripcion or baja.get_tipo_display()
+                    else:
+                        observaciones = "No justificado"
+                else:
+                    observaciones = "No justificado"
             if tipo == "activos" and not detalle:
                 detalle = "Activo"
 
@@ -522,6 +548,7 @@ class DashboardListView(LoginRequiredMixin, StaffOnlyMixin, View):
                     "tipo_vinculacion": tipo_v,
                     "puesto": puesto,
                     "detalle": detalle,
+                    "observaciones": observaciones,
                 }
             )
 
@@ -599,25 +626,37 @@ class ReporteAusenciasView(View):
         for u in ausentes:
             if u.empleado_id:
                 nombre = f"{u.empleado.nombre} {u.empleado.apellido}".strip()
-                depto = u.empleado.departamento or ""
-                
+                depto_val = u.empleado.departamento or ""
+                tipo_v = u.empleado.get_tipo_vinculacion_display() if hasattr(u.empleado, 'get_tipo_vinculacion_display') else (u.empleado.tipo_vinculacion or "")
+
                 # Verificar si tiene baja autorizada para ese día
                 baja = BajaAutorizada.objects.filter(
                     empleado_id=u.empleado_id,
                     fecha_inicio__lte=fecha,
                     fecha_fin__gte=fecha
                 ).first()
-                
+
                 if baja:
                     estado = f"Baja Autorizada: {baja.get_tipo_display()}"
+                    observaciones = baja.descripcion or baja.get_tipo_display()
                 else:
                     estado = "Sin entrada"
+                    observaciones = "No justificado"
             else:
                 nombre = (u.nombre or u.user_id or "").strip()
-                depto = ""
+                depto_val = ""
+                tipo_v = ""
                 estado = "Sin entrada"
-                
-            filas.append({"fecha": fecha, "nombre": nombre, "departamento": depto, "estado": estado})
+                observaciones = "No justificado"
+
+            filas.append({
+                "fecha": fecha,
+                "nombre": nombre,
+                "departamento": depto_val,
+                "tipo": tipo_v,
+                "estado": estado,
+                "observaciones": observaciones,
+            })
 
         filas.sort(key=lambda x: x["nombre"].lower() if x["nombre"] else "")
         page_obj = Paginator(filas, self.page_size).get_page(request.GET.get("page"))
@@ -885,6 +924,22 @@ class AusenciasTotalesPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
 
             dias_aus_neto = max(dias_aus_bruto - dias_baja, 0)
             
+            # Generar texto de observaciones (tipos de baja presentes en el período)
+            observaciones = ""
+            if key[0] == "emp":
+                emp_id = key[1]
+                bajas_en_periodo = BajaAutorizada.objects.filter(
+                    empleado_id=emp_id,
+                    fecha_inicio__lte=d2,
+                    fecha_fin__gte=d1
+                )
+                tipos = sorted({b.get_tipo_display() for b in bajas_en_periodo})
+                descripciones = [b.descripcion for b in bajas_en_periodo if b.descripcion]
+                partes = tipos + [d for d in descripciones if d not in tipos]
+                observaciones = "; ".join(partes) if partes else "No justificado"
+            else:
+                observaciones = "No justificado"
+
             rows.append({
                 "nombre": info["nombre"],
                 "departamento": info["departamento"],
@@ -892,6 +947,7 @@ class AusenciasTotalesPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                 "puesto": info["puesto"],
                 "ausencias": dias_aus_neto,
                 "bajas": dias_baja,
+                "observaciones": observaciones,
             })
 
         rows.sort(key=lambda x: (x["nombre"].lower(), x["departamento"].lower()))
@@ -1414,10 +1470,18 @@ class RepAusenciasEmpleadoPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                         fecha_inicio__lte=f,
                         fecha_fin__gte=f
                     ).first()
-                
+
+                if baja:
+                    estado = f"Baja Autorizada: {baja.get_tipo_display()}"
+                    observaciones = baja.descripcion or baja.get_tipo_display()
+                else:
+                    estado = "Sin marcaje"
+                    observaciones = "No justificado"
+
                 rows.append({
                     "fecha": f,
-                    "estado": f"Baja Autorizada: {baja.get_tipo_display()}" if baja else "Sin marcaje"
+                    "estado": estado,
+                    "observaciones": observaciones,
                 })
 
         return rows, meta, total_laborables
@@ -1652,7 +1716,6 @@ class NominaArchivoView(LoginRequiredMixin, StaffOnlyMixin, View):
         periodos = NominaPeriodo.objects.filter(finalizado=True).order_by("-inicio")
         
         # Agrupar por Año -> Mes
-        # Estructura: { 2024: { 1: [p1, p2], 2: [p3] }, 2023: ... }
         archivo = {}
         for p in periodos:
             year = p.inicio.year
@@ -1666,3 +1729,281 @@ class NominaArchivoView(LoginRequiredMixin, StaffOnlyMixin, View):
             archivo[year][month].append(p)
             
         return render(request, self.template_name, {"archivo": archivo})
+
+
+# ======================================================================================
+# Nuevas vistas PDF: Asistencia General, Ausencias del Día, Dashboard PDF
+# ======================================================================================
+
+class ReporteAsistenciaGeneralPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
+    """PDF del reporte diario de asistencia (idéntico al HTML pero con logo corporativo)."""
+    http_method_names = ["get", "head"]
+
+    def head(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def get(self, request):
+        desde_raw = (request.GET.get("desde") or "").strip()
+        hasta_raw = (request.GET.get("hasta") or "").strip()
+        q = (request.GET.get("q") or "").strip()
+        empleado_id = (request.GET.get("empleado") or "").strip()
+        depto = (request.GET.get("departamento") or "").strip()
+
+        hoy = timezone.localdate()
+        if not desde_raw and not hasta_raw:
+            desde_raw = hoy.strftime("%Y-%m-%d")
+            hasta_raw = hoy.strftime("%Y-%m-%d")
+
+        desde = ReporteAsistenciaGeneralView._parse_fecha(desde_raw)
+        hasta = ReporteAsistenciaGeneralView._parse_fecha(hasta_raw, end=True)
+
+        base = AsistenciaCruda.objects.all()
+        if desde:
+            base = base.filter(ts__gte=desde)
+        if hasta:
+            base = base.filter(ts__lte=hasta)
+
+        if q:
+            base = base.filter(
+                Q(usuario__empleado__nombre__icontains=q)
+                | Q(usuario__empleado__apellido__icontains=q)
+                | Q(usuario__empleado__numero__icontains=q)
+                | Q(usuario__empleado__doc_id__icontains=q)
+                | Q(usuario__nombre__icontains=q)
+                | Q(user_id__icontains=q)
+            )
+
+        if empleado_id.isdigit():
+            emp_id_int = int(empleado_id)
+            ud_exists = UsuarioDispositivo.objects.filter(
+                empleado_id=emp_id_int,
+                dispositivo_id=OuterRef("dispositivo_id"),
+                user_id=OuterRef("user_id"),
+            )
+            base = base.filter(Q(usuario__empleado_id=emp_id_int) | Exists(ud_exists))
+
+        if depto:
+            base = base.filter(usuario__empleado__departamento=depto)
+
+        pares = list(base.values_list("dispositivo_id", "user_id").distinct())
+        mapa = _mapa_ud_para_pares(pares)
+
+        from django.db.models.functions import TruncDate
+        agg = (
+            base.annotate(fecha=TruncDate("ts"))
+            .values(
+                "fecha", "dispositivo_id", "user_id",
+                "usuario__nombre",
+                "usuario__empleado_id",
+                "usuario__empleado__nombre",
+                "usuario__empleado__apellido",
+                "usuario__empleado__departamento",
+                "usuario__empleado__tipo_vinculacion",
+            )
+            .annotate(entrada=Min("ts"), salida=Max("ts"), n=Count("id"))
+            .order_by("usuario__empleado__apellido", "usuario__empleado__nombre", "fecha")
+        )
+
+        filas = []
+        for r in agg:
+            entrada = r["entrada"]
+            if entrada:
+                entrada = timezone.localtime(entrada)
+
+            salida = r["salida"] if r["n"] >= 2 else None
+            if salida:
+                salida = timezone.localtime(salida)
+
+            horas = (salida - entrada) if (entrada and salida and salida >= entrada) else timedelta(0)
+
+            emp_id_row = r["usuario__empleado_id"]
+            depto_row = ""
+            tipo_row = ""
+            if emp_id_row:
+                nombre = f"{r.get('usuario__empleado__nombre') or ''} {r.get('usuario__empleado__apellido') or ''}".strip()
+                depto_row = r.get("usuario__empleado__departamento") or ""
+                tipo_row = r.get("usuario__empleado__tipo_vinculacion") or ""
+            else:
+                key = (r["dispositivo_id"], r["user_id"])
+                info = mapa.get(key)
+                if info and info.get("empleado_id"):
+                    nombre = f"{info.get('emp_nombre') or ''} {info.get('emp_apellido') or ''}".strip()
+                    depto_row = info.get("depto") or ""
+                    tipo_row = info.get("tipo") or ""
+                else:
+                    continue
+
+            filas.append({
+                "fecha": r["fecha"],
+                "nombre": nombre,
+                "departamento": depto_row,
+                "tipo": tipo_row,
+                "entrada": entrada,
+                "salida": salida,
+                "total_horas": horas,  # Pasamos timedelta para que el generador lo formatee
+                "estado": "Tarde" if (entrada and (entrada.hour > HORA_INICIO or (entrada.hour == HORA_INICIO and entrada.minute > TOL_MINUTOS))) else "Puntual"
+            })
+
+        d1 = ReporteAsistenciaGeneralView._parse_fecha(desde_raw)
+        d2 = ReporteAsistenciaGeneralView._parse_fecha(hasta_raw)
+        return build_pdf_asistencia_general(request, d1 or timezone.localdate(), d2 or timezone.localdate(), filas, _hhmm)
+
+
+class ReporteAusenciasDiaPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
+    """PDF del reporte de ausencias del día con logo corporativo y columna observaciones."""
+    http_method_names = ["get", "head"]
+
+    def head(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def get(self, request):
+        fecha_raw = (request.GET.get("fecha") or "").strip()
+        q = (request.GET.get("q") or "").strip()
+        depto = (request.GET.get("departamento") or "").strip()
+        fecha = _parse_date_yyyy_mm_dd(fecha_raw) or timezone.localdate()
+
+        inicio = make_aware(datetime(fecha.year, fecha.month, fecha.day, 0, 0, 0))
+        fin = make_aware(datetime(fecha.year, fecha.month, fecha.day, 23, 59, 59))
+
+        uds = UsuarioDispositivo.objects.select_related("empleado", "dispositivo").filter(
+            activo=True, dispositivo__activo=True, empleado__isnull=False
+        )
+        if depto:
+            uds = uds.filter(empleado__departamento=depto)
+
+        asistencia_qs = AsistenciaCruda.objects.filter(
+            dispositivo_id=OuterRef("dispositivo_id"),
+            user_id=OuterRef("user_id"),
+            ts__range=(inicio, fin),
+        )
+        ausentes = uds.annotate(tiene_firma=Exists(asistencia_qs)).filter(tiene_firma=False)
+
+        if q:
+            ausentes = ausentes.filter(
+                Q(empleado__nombre__icontains=q)
+                | Q(empleado__apellido__icontains=q)
+                | Q(nombre__icontains=q)
+                | Q(user_id__icontains=q)
+            )
+
+        filas = []
+        for u in ausentes:
+            if u.empleado_id:
+                nombre = f"{u.empleado.nombre} {u.empleado.apellido}".strip()
+                depto_val = u.empleado.departamento or ""
+                tipo_v = u.empleado.tipo_vinculacion or ""
+
+                baja = BajaAutorizada.objects.filter(
+                    empleado_id=u.empleado_id,
+                    fecha_inicio__lte=fecha,
+                    fecha_fin__gte=fecha
+                ).first()
+
+                if baja:
+                    estado = f"Baja Autorizada: {baja.get_tipo_display()}"
+                    observaciones = baja.descripcion or baja.get_tipo_display()
+                else:
+                    estado = "Sin entrada"
+                    observaciones = "No justificado"
+            else:
+                nombre = (u.nombre or u.user_id or "").strip()
+                depto_val = ""
+                tipo_v = ""
+                estado = "Sin entrada"
+                observaciones = "No justificado"
+
+            filas.append({
+                "fecha": fecha,
+                "nombre": nombre,
+                "departamento": depto_val,
+                "tipo": tipo_v,
+                "estado": estado,
+                "observaciones": observaciones,
+            })
+
+        filas.sort(key=lambda x: x["nombre"].lower() if x["nombre"] else "")
+        return build_pdf_ausencias_dia(request, fecha, fecha, filas)
+
+
+class DashboardListadoPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
+    """PDF corporativo de las listas del dashboard (activos, firmaron, nofirmaron, tarde)."""
+    http_method_names = ["get", "head"]
+
+    def head(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def get(self, request, tipo):
+        if tipo not in {"activos", "firmaron", "nofirmaron", "tarde"}:
+            return HttpResponseBadRequest("Tipo inválido")
+
+        # Reutilizar la lógica de DashboardListView
+        list_view = DashboardListView()
+        fecha = list_view._parse_fecha(request)
+        data = list_view._compute_sets(fecha)
+
+        pairs = data[tipo]
+        info = data["info"]
+        firmas = data["firmas"]
+
+        titulo_map = {
+            "activos": "Empleados Activos",
+            "firmaron": "Firmaron en el Día",
+            "nofirmaron": "No Firmaron en el Día",
+            "tarde": "Llegadas Tarde (> 09:05)",
+        }
+
+        filas = []
+        for key in pairs:
+            did, uid = key
+            meta = info.get(key)
+            if not meta:
+                nombre = f"Usuario {uid}"
+                departamento = tipo_v = puesto = ""
+            else:
+                nombre = meta["nombre"]
+                departamento = meta["departamento"]
+                tipo_v = meta["tipo_vinculacion"]
+                puesto = meta["puesto"]
+
+            detalle = ""
+            observaciones = ""
+            if tipo in {"firmaron", "tarde"}:
+                ts = firmas.get(key)
+                if ts:
+                    ts_local = timezone.localtime(ts)
+                    detalle = f"Primera firma: {ts_local.strftime('%H:%M')}"
+                    if tipo == "tarde":
+                        detalle += " (tarde)"
+            if tipo == "nofirmaron":
+                detalle = "Sin marcaje"
+                # Buscar baja autorizada vía UsuarioDispositivo
+                ud_obj = UsuarioDispositivo.objects.filter(
+                    dispositivo_id=did, user_id=uid
+                ).only("empleado_id").first()
+                emp_id_key = ud_obj.empleado_id if ud_obj else None
+                if emp_id_key:
+                    baja = BajaAutorizada.objects.filter(
+                        empleado_id=emp_id_key,
+                        fecha_inicio__lte=fecha,
+                        fecha_fin__gte=fecha,
+                    ).first()
+                    observaciones = (baja.descripcion or baja.get_tipo_display()) if baja else "No justificado"
+                else:
+                    observaciones = "No justificado"
+            if tipo == "activos" and not detalle:
+                detalle = "Activo"
+
+            filas.append({
+                "nombre": nombre,
+                "departamento": departamento,
+                "tipo_vinculacion": tipo_v,
+                "puesto": puesto,
+                "detalle": detalle,
+                "observaciones": observaciones,
+            })
+
+        filas.sort(key=lambda x: x["nombre"].lower())
+        return build_pdf_dashboard_listado(
+            request, fecha, tipo, titulo_map.get(tipo, tipo.upper()), filas
+        )
+

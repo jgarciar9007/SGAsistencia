@@ -76,7 +76,7 @@ def _tabla_estilizada(headers: Sequence[str], rows: Sequence[Sequence], col_widt
     return table
 
 from django.http import HttpResponse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate
 
@@ -116,20 +116,22 @@ def build_pdf_ausencias_totales(request, d1: date, d2: date, rows: list) -> Http
 
     doc = SimpleDocTemplate(response, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm, topMargin=15 * mm, bottomMargin=20 * mm)
 
-    periodo = f"PERIODO: {d1.strftime('%d/%m/%Y')}  AL  {d2.strftime('%d/%m/%Y')}"
+    periodo = f"PERIODO: {d1.strftime('%d/%m/%Y')}  AL  {d2.strftime('%Y/%m/%d')}"
     usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     story = _header_pdf_story("REPORTE DE AUSENCIAS (DÍAS)", periodo, usuario)
 
-    body_rows = [[r["nombre"], r["departamento"], r["tipo"], f'{r["ausencias"]}', f'{r["bajas"]}'] for r in rows]
+    body_rows = [[r["nombre"], r["departamento"], r["tipo"], f'{r["ausencias"]}', f'{r["bajas"]}', r.get("observaciones", "")] for r in rows]
     table = _tabla_estilizada(
-        headers=["Empleado / Usuario", "Departamento", "Tipo", "Ausencias", "Bajas"],
+        headers=["Empleado / Usuario", "Departamento", "Tipo", "Ausencias", "Bajas", "Observaciones"],
         rows=body_rows,
-        col_widths=[60 * mm, 50 * mm, 25 * mm, 20 * mm, 15 * mm],
+        col_widths=[50 * mm, 40 * mm, 20 * mm, 15 * mm, 15 * mm, 40 * mm],
         style_overrides=[
             ("ALIGN", (0, 1), (0, -1), "LEFT"),
             ("ALIGN", (3, 1), (4, -1), "RIGHT"),
+            ("ALIGN", (5, 1), (5, -1), "LEFT"),
             ("LEFTPADDING", (0, 1), (0, -1), 6),
             ("RIGHTPADDING", (3, 1), (4, -1), 6),
+            ("LEFTPADDING", (5, 1), (5, -1), 6),
         ]
     )
     story.extend([table, Spacer(1, 10), Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])])
@@ -341,15 +343,15 @@ def build_pdf_rep_ausencias_empleado(request, d1: date, d2: date, meta: dict, ro
     body_rows = []
     for r in rows:
         fecha_txt = r["fecha"].strftime("%d/%m/%Y")
-        body_rows.append([fecha_txt, r["estado"]])
+        body_rows.append([fecha_txt, r["estado"], r.get("observaciones", "")])
 
     # Fila de totales al final
-    body_rows.append(["TOTAL", f"{total_ausencias} días"])
+    body_rows.append(["TOTAL", f"{total_ausencias} días", ""])
 
     table = _tabla_estilizada(
-        headers=["Fecha", "Estado"],
+        headers=["Fecha", "Estado", "Observaciones"],
         rows=body_rows,
-        col_widths=[40 * mm, 80 * mm],
+        col_widths=[35 * mm, 50 * mm, 75 * mm],
         style_overrides=[
             ("ALIGN", (0, 1), (0, -1), "LEFT"),
             ("LEFTPADDING", (0, 1), (0, -1), 6),
@@ -370,6 +372,173 @@ def build_pdf_rep_ausencias_empleado(request, d1: date, d2: date, meta: dict, ro
             Paragraph("Consejo Nacional para el Desarrollo Económico y Social", styles["Normal"]),
         ]
     )
+
+    doc.build(story)
+    return response
+
+
+def build_pdf_dashboard_listado(request, fecha, tipo: str, titulo: str, filas: list) -> HttpResponse:
+    """PDF corporativo para las listas del dashboard (activos, firmaron, no firmaron, tarde)."""
+    from datetime import date as date_type
+    fecha_str = fecha.strftime("%d/%m/%Y") if isinstance(fecha, date_type) else str(fecha)
+    tipo_safe = str(tipo)
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="dashboard_{tipo_safe}_{fecha_str.replace("/", "-")}.pdf"'
+
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        leftMargin=20 * mm, rightMargin=20 * mm, topMargin=15 * mm, bottomMargin=20 * mm
+    )
+
+    periodo = f"FECHA: {fecha_str}"
+    usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    story = _header_pdf_story(titulo.upper(), periodo, usuario)
+
+    styles = getSampleStyleSheet()
+    incluir_obs = (tipo_safe == "nofirmaron")
+
+    if incluir_obs:
+        estilo_obs = ParagraphStyle("Obs", parent=styles["Normal"], fontSize=8, leading=10)
+        body_rows = [
+            [
+                r.get("nombre", ""),
+                r.get("departamento", ""),
+                r.get("tipo_vinculacion", ""),
+                r.get("puesto", ""),
+                r.get("detalle", ""),
+                Paragraph(r.get("observaciones") or "No justificado", estilo_obs),
+            ]
+            for r in filas
+        ]
+        headers = ["Empleado", "Departamento", "Tipo", "Puesto", "Detalle", "Observaciones"]
+        col_widths = [42 * mm, 35 * mm, 18 * mm, 28 * mm, 25 * mm, 42 * mm]
+    else:
+        body_rows = [
+            [
+                r.get("nombre", ""),
+                r.get("departamento", ""),
+                r.get("tipo_vinculacion", ""),
+                r.get("puesto", ""),
+                r.get("detalle", ""),
+            ]
+            for r in filas
+        ]
+        headers = ["Empleado", "Departamento", "Tipo", "Puesto", "Detalle"]
+        col_widths = [55 * mm, 45 * mm, 22 * mm, 35 * mm, 33 * mm]
+
+    if body_rows:
+        table = _tabla_estilizada(
+            headers=headers,
+            rows=body_rows,
+            col_widths=col_widths,
+            style_overrides=[
+                ("ALIGN", (0, 1), (0, -1), "LEFT"),
+                ("LEFTPADDING", (0, 1), (0, -1), 6),
+            ]
+        )
+        story.append(table)
+    else:
+        story.append(Paragraph("No hay registros para esta fecha.", styles["Normal"]))
+
+    story.extend([
+        Spacer(1, 10),
+        Paragraph(f"Total: {len(filas)} registros", styles["Normal"]),
+        Spacer(1, 6),
+        Paragraph("Consejo Nacional para el Desarrollo Económico y Social", styles["Normal"]),
+    ])
+
+    doc.build(story)
+    return response
+
+
+def build_pdf_asistencia_general(request, d1: date, d2: date, rows: list, _hhmm_func) -> HttpResponse:
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="asistencia_general_{d1.strftime("%Y-%m")}.pdf"'
+
+    from reportlab.lib.pagesizes import landscape, A4
+    doc = SimpleDocTemplate(
+        response, pagesize=landscape(A4),
+        leftMargin=15*mm, rightMargin=15*mm, topMargin=15*mm, bottomMargin=15*mm
+    )
+
+    periodo = f"PERIODO: {d1.strftime('%d/%m/%Y')}  AL  {d2.strftime('%d/%m/%Y')}"
+    usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    story = _header_pdf_story("REPORTE DE ASISTENCIA GENERAL", periodo, usuario)
+
+    body_rows = []
+    for r in rows:
+        body_rows.append([
+            r["nombre"],
+            r["departamento"],
+            r["tipo"],
+            r["fecha"].strftime("%d/%m/%Y"),
+            r["entrada"].strftime("%H:%M") if r["entrada"] else "--:--",
+            r["salida"].strftime("%H:%M") if r["salida"] else "--:--",
+            _hhmm_func(r["total_horas"]) if r["total_horas"] else "--:--",
+            r["estado"]
+        ])
+
+    table = _tabla_estilizada(
+        headers=["Empleado", "Departamento", "Tipo", "Fecha", "Entrada", "Salida", "Horas", "Estado"],
+        rows=body_rows,
+        col_widths=[50*mm, 40*mm, 20*mm, 25*mm, 25*mm, 25*mm, 25*mm, 30*mm],
+        style_overrides=[
+            ("ALIGN", (0, 1), (1, -1), "LEFT"),
+            ("ALIGN", (3, 1), (6, -1), "CENTER"),
+            ("ALIGN", (7, 1), (7, -1), "LEFT"),
+            ("LEFTPADDING", (0, 1), (0, -1), 4),
+            ("RIGHTPADDING", (6, 1), (6, -1), 4),
+        ]
+    )
+
+    story.extend([
+        table, 
+        Spacer(1, 10), 
+        Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])
+    ])
+
+    doc.build(story)
+    return response
+
+
+def build_pdf_ausencias_dia(request, d1: date, d2: date, rows: list) -> HttpResponse:
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="ausencias_por_dia_{d1.strftime("%Y-%m")}.pdf"'
+
+    doc = SimpleDocTemplate(
+        response, pagesize=A4,
+        leftMargin=20*mm, rightMargin=20*mm, topMargin=25*mm, bottomMargin=20*mm
+    )
+    periodo = f"PERIODO: {d1.strftime('%d/%m/%Y')}  AL  {d2.strftime('%d/%m/%Y')}"
+    usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    story = _header_pdf_story("REPORTE DE AUSENCIAS POR DÍA", periodo, usuario)
+
+    body_rows = []
+    for r in rows:
+        body_rows.append([
+            r["fecha"].strftime("%d/%m/%Y"),
+            r["nombre"],
+            r["departamento"],
+            r["tipo"],
+            r["estado"],
+            r.get("observaciones", "")
+        ])
+
+    table = _tabla_estilizada(
+        headers=["Fecha", "Empleado", "Departamento", "Tipo", "Estado", "Observaciones"],
+        rows=body_rows,
+        col_widths=[30*mm, 50*mm, 40*mm, 20*mm, 25*mm, 35*mm],
+        style_overrides=[
+            ("ALIGN", (0, 1), (0, -1), "CENTER"),
+            ("ALIGN", (1, 1), (3, -1), "LEFT"),
+            ("ALIGN", (4, 1), (4, -1), "CENTER"),
+            ("ALIGN", (5, 1), (5, -1), "LEFT"),
+            ("LEFTPADDING", (1, 1), (1, -1), 4),
+            ("LEFTPADDING", (5, 1), (5, -1), 4),
+        ]
+    )
+    story.extend([table, Spacer(1, 10), Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])])
 
     doc.build(story)
     return response

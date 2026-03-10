@@ -3,9 +3,15 @@
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="h4 mb-0"><i class="bi bi-person-x me-2"></i>Reporte de ausencias</h2>
-    <span class="badge text-bg-dark">
-      <i class="bi bi-123 me-1"></i>Total: {{ total }}
-    </span>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge text-bg-dark">
+        <i class="bi bi-123 me-1"></i>Total: {{ total }}
+      </span>
+      <a href="{% url 'reportes:ausencias_pdf' %}?fecha={{ fecha }}&departamento={{ depto_sel }}&q={{ q }}"
+         class="btn btn-danger btn-sm" target="_blank">
+        <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+      </a>
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -47,6 +53,7 @@
           <th class="text-nowrap">Empleado / Usuario</th>
           <th class="text-nowrap d-none d-md-table-cell">Departamento</th>
           <th class="text-nowrap">Estado</th>
+          <th class="text-nowrap">Observaciones</th>
         </tr>
       </thead>
       <tbody>
@@ -60,10 +67,17 @@
               <i class="bi bi-exclamation-octagon me-1"></i>{{ r.estado }}
             </span>
           </td>
+          <td class="text-nowrap">
+            {% if r.observaciones and r.observaciones != 'No justificado' %}
+              <span class="badge text-bg-warning text-dark">{{ r.observaciones }}</span>
+            {% else %}
+              <span class="text-muted small">No justificado</span>
+            {% endif %}
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="text-center text-muted py-4">Sin ausentes para la fecha seleccionada.</td>
+          <td colspan="5" class="text-center text-muted py-4">Sin ausentes para la fecha seleccionada.</td>
         </tr>
         {% endfor %}
       </tbody>

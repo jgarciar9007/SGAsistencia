@@ -76,13 +76,14 @@
                                     class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
                             </a>
                         </th>
-                        <th class="text-center pe-4">
+                        <th class="text-center">
                             <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=bajas&order={% if sort == 'bajas' and order == 'asc' %}desc{% else %}asc{% endif %}"
                                 class="text-decoration-none text-dark">
                                 Bajas {% if sort == 'bajas' %}<i
                                     class="bi bi-sort-numeric-{{ order|default:'down' }} ms-1 text-primary"></i>{% endif %}
                             </a>
                         </th>
+                        <th>Observaciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,7 +93,14 @@
                         <td><span class="badge bg-light text-dark fw-normal border">{{ r.departamento }}</span></td>
                         <td>{{ r.tipo }}</td>
                         <td class="text-center text-danger fw-bold">{{ r.ausencias }}</td>
-                        <td class="text-center pe-4 text-success fw-bold">{{ r.bajas }}</td>
+                        <td class="text-center text-success fw-bold">{{ r.bajas }}</td>
+                        <td class="small text-muted">
+                            {% if r.observaciones and r.observaciones != 'No justificado' %}
+                              <span class="badge text-bg-warning text-dark">{{ r.observaciones }}</span>
+                            {% else %}
+                              <span class="text-muted">No justificado</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>

@@ -10,11 +10,10 @@
         Fecha: {{ fecha|date:"d/m/Y" }} · Total: {{ filas|length }}
       </div>
     </div>
-    <button type="button"
-            class="btn btn-outline-secondary d-print-none"
-            onclick="window.print()">
-      <i class="bi bi-printer me-1"></i>Imprimir
-    </button>
+    <a href="{% url 'reportes:dashboard_listado_pdf' tipo %}?fecha={{ fecha|date:'Y-m-d' }}"
+       class="btn btn-danger d-print-none" target="_blank">
+      <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+    </a>
   </div>
 
   <div class="card shadow-sm">
@@ -28,6 +27,7 @@
               <th>Tipo</th>
               <th>Puesto</th>
               <th>Detalle</th>
+              {% if tipo == 'nofirmaron' %}<th>Observaciones</th>{% endif %}
             </tr>
           </thead>
           <tbody>
@@ -38,10 +38,19 @@
                 <td>{{ r.tipo_vinculacion }}</td>
                 <td>{{ r.puesto }}</td>
                 <td>{{ r.detalle }}</td>
+                {% if tipo == 'nofirmaron' %}
+                  <td>
+                    {% if r.observaciones and r.observaciones != 'No justificado' %}
+                      <span class="badge text-bg-warning text-dark">{{ r.observaciones }}</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">No justificado</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
               </tr>
             {% empty %}
               <tr>
-                <td colspan="5" class="text-center text-muted py-3">
+                <td colspan="{% if tipo == 'nofirmaron' %}6{% else %}5{% endif %}" class="text-center text-muted py-3">
                   No hay registros para la fecha seleccionada.
                 </td>
               </tr>

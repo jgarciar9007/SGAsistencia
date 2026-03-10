@@ -17,6 +17,11 @@ from .views import (
     NominaArchivoView,
 )
 from .views import SoloEntradaFormView, SoloEntradaPDFView, DashboardListView
+from .views import (
+    ReporteAsistenciaGeneralPDFView,
+    ReporteAusenciasDiaPDFView,
+    DashboardListadoPDFView,
+)
 
 app_name = "reportes"
 
@@ -35,11 +40,16 @@ urlpatterns = [
     # Reportes de Ausencias por Empleado
     path("trabajador/ausencias/",      RepAusenciasEmpleadoFormView.as_view(), name="rep_ausencias_empleado_form"),
     path("trabajador/ausencias/pdf/",  RepAusenciasEmpleadoPDFView.as_view(),  name="rep_ausencias_empleado_pdf"),
-      path(
-        "dashboard/listado/<str:tipo>/",
+    path("dashboard/listado/<str:tipo>/",
         DashboardListView.as_view(),
         name="dashboard_listado",
     ),
+    path("dashboard/listado/<str:tipo>/pdf/",
+        DashboardListadoPDFView.as_view(),
+        name="dashboard_listado_pdf",
+    ),
+    path("asistencia/pdf/",           ReporteAsistenciaGeneralPDFView.as_view(), name="asistencia_general_pdf"),
+    path("ausencias/pdf/",            ReporteAusenciasDiaPDFView.as_view(),    name="ausencias_pdf"),
     path("nomina/calculo/",       NominaCalculoFormView.as_view(),        name="nomina_calculo_form"),
     path("nomina/calculo/pdf/",   NominaCalculoPDFView.as_view(),         name="nomina_calculo_pdf"),
     path("nomina/preview/",       NominaCalculoPreviewView.as_view(),     name="nomina_preview"),
