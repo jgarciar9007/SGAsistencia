@@ -74,6 +74,26 @@ def _hhmm(td: timedelta | None) -> str:
     mins = total_secs // 60
     return f"{sign}{mins // 60:02d}:{mins % 60:02d}"
 
+def _format_days_hours(td: timedelta | None) -> str:
+    """Formatea horas a días y horas, donde 1 día = 8 horas (28800 seg)."""
+    if not td:
+        return "00:00"
+        
+    total_secs = int(td.total_seconds())
+    sign = "-" if total_secs < 0 else ""
+    total_secs = abs(total_secs)
+    
+    days = total_secs // 28800
+    rem_secs = total_secs % 28800
+    
+    hours = rem_secs // 3600
+    mins = (rem_secs % 3600) // 60
+    
+    if days > 0:
+        return f"{sign}{days}d {hours:02d}:{mins:02d}"
+    else:
+        return f"{sign}{hours:02d}:{mins:02d}"
+
 
 def _laborables(d1: date, d2: date) -> Tuple[List[date], set]:
     """Devuelve lista y set de días laborables [L–V] en el rango."""
@@ -704,10 +724,14 @@ class NominaHorasFormView(LoginRequiredMixin, StaffOnlyMixin, View):
         departamentos = sorted({r["departamento"] for r in rows if r["departamento"]})
         rows = _filter_and_sort_rows(rows, q=q, depto=depto, sort=sort, order=order)
 
-        # Formatear total de timedelta a HH:MM para la vista
+        # Formatear timedelta a xd HH:MM para la vista
         for r in rows:
             if isinstance(r.get("total"), timedelta):
-                r["total"] = _hhmm(r["total"])
+                r["total"] = _format_days_hours(r["total"])
+            if isinstance(r.get("horas_a_trabajar"), timedelta):
+                r["horas_a_trabajar"] = _format_days_hours(r["horas_a_trabajar"])
+            if isinstance(r.get("variacion"), timedelta):
+                r["variacion"] = _format_days_hours(r["variacion"])
 
         ctx = {"inicio": d1, "fin": d2, "rows": rows, "q": q, "depto_sel": depto, "sort": sort, "order": order, "departamentos": departamentos}
         return render(request, self.template_name, ctx)
@@ -814,7 +838,7 @@ class NominaHorasPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
         return rows
 
     def _build_pdf(self, request, d1: date, d2: date, rows: List[dict]) -> HttpResponse:
-        return build_pdf_nomina_horas(request, d1, d2, rows, _hhmm)
+        return build_pdf_nomina_horas(request, d1, d2, rows, _format_days_hours)
 
 
     def get(self, request, *args, **kwargs):
