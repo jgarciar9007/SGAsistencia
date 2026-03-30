@@ -87,10 +87,11 @@
                             </a>
                         </th>
                         <th>Tipo</th>
+                        <th class="text-end pe-4">A trabajar</th>
                         <th class="text-end pe-4">
                             <a href="?inicio={{ inicio|date:'Y-m-d' }}&fin={{ fin|date:'Y-m-d' }}&q={{ q }}&departamento={{ depto_sel }}&sort=horas&order={% if sort == 'horas' and order == 'asc' %}desc{% else %}asc{% endif %}"
                                 class="text-decoration-none text-dark d-flex align-items-center justify-content-end">
-                                Horas Totales
+                                Trabajadas
                                 {% if sort == 'horas' %}
                                 <i class="bi bi-sort-numeric-{{ order|default:'down' }} ms-2 text-primary"></i>
                                 {% else %}
@@ -98,6 +99,7 @@
                                 {% endif %}
                             </a>
                         </th>
+                        <th class="text-end pe-4">Variación</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,11 +108,13 @@
                         <td class="ps-4 fw-medium text-dark">{{ r.nombre }}</td>
                         <td><span class="badge bg-light text-dark fw-normal border">{{ r.departamento }}</span></td>
                         <td>{{ r.tipo }}</td>
+                        <td class="text-end pe-4 font-monospace fw-bold text-muted">{{ r.horas_a_trabajar|default:"00:00" }}</td>
                         <td class="text-end pe-4 font-monospace fw-bold text-primary">{{ r.total|default:"00:00" }}</td>
+                        <td class="text-end pe-4 font-monospace fw-bold {% if '-' in r.variacion %}text-danger{% else %}text-success{% endif %}">{{ r.variacion|default:"00:00" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center py-5 text-muted">
+                        <td colspan="6" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox h2 d-block mb-3"></i>
                             No se encontraron registros en este período o con estos filtros.
                         </td>

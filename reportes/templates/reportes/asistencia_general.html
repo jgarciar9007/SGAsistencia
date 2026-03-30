@@ -60,7 +60,9 @@
           <th class="text-nowrap d-none d-md-table-cell">Departamento</th>
           <th class="text-nowrap">Entrada</th>
           <th class="text-nowrap">Salida</th>
-          <th class="text-nowrap">Horas trabajadas</th>
+          <th class="text-nowrap">A trabajar</th>
+          <th class="text-nowrap">Trabajadas</th>
+          <th class="text-nowrap">Variación</th>
         </tr>
       </thead>
       <tbody>
@@ -75,7 +77,11 @@
           <td class="text-nowrap">
             {% if r.salida %}{{ r.salida|date:"H:i:s" }}{% else %}<span class="text-danger">Sin firma</span>{% endif %}
           </td>
-          <td class="text-nowrap">{{ r.total_horas|default:"0" }}</td>
+          <td class="text-nowrap">{{ r.horas_a_trabajar|default:"00:00" }}</td>
+          <td class="text-nowrap">{{ r.total_horas|default:"00:00" }}</td>
+          <td class="text-nowrap {% if '-' in r.variacion %}text-danger{% else %}text-success{% endif %}">
+            {{ r.variacion|default:"00:00" }}
+          </td>
         </tr>
         {% empty %}
         <tr>

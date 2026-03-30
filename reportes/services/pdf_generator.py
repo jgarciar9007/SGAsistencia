@@ -90,19 +90,43 @@ def build_pdf_nomina_horas(request, d1: date, d2: date, rows: list, _hhmm_func) 
     usuario = f"GENERADO POR: {request.user.get_username().upper()}  |  FECHA: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     story = _header_pdf_story("REPORTE DE HORAS TRABAJADAS", periodo, usuario)
 
-    body_rows = [
-        [r["nombre"], r["departamento"], r["tipo"], _hhmm_func(r["total"])]
-        for r in rows
-    ]
+    body_rows = []
+    total_esperado = timedelta(0)
+    total_trabajado = timedelta(0)
+    total_variacion = timedelta(0)
+
+    for r in rows:
+        body_rows.append([
+            r["nombre"], 
+            r["departamento"], 
+            r["tipo"], 
+            _hhmm_func(r.get("horas_a_trabajar", timedelta(0))), 
+            _hhmm_func(r["total"]), 
+            _hhmm_func(r.get("variacion", timedelta(0)))
+        ])
+        total_esperado += r.get("horas_a_trabajar", timedelta(0))
+        total_trabajado += r["total"]
+        total_variacion += r.get("variacion", timedelta(0))
+    
+    # Agregar fila de TOTAL
+    body_rows.append([
+        "TOTAL", "", "", 
+        _hhmm_func(total_esperado), 
+        _hhmm_func(total_trabajado), 
+        _hhmm_func(total_variacion)
+    ])
+
     table = _tabla_estilizada(
-        headers=["Empleado / Usuario", "Departamento", "Tipo", "Horas Totales"],
+        headers=["Empleado / Usuario", "Departamento", "Tipo", "A trabajar", "Trabajadas", "Variación"],
         rows=body_rows,
-        col_widths=[70 * mm, 65 * mm, 15 * mm, 20 * mm],
+        col_widths=[60 * mm, 40 * mm, 15 * mm, 20 * mm, 20 * mm, 15 * mm],
         style_overrides=[
             ("ALIGN", (0, 1), (0, -1), "LEFT"),   # Nombre a la izquierda
-            ("ALIGN", (3, 1), (3, -1), "RIGHT"),  # Horas a la derecha
+            ("ALIGN", (3, 1), (5, -1), "RIGHT"),  # Horas a la derecha
             ("LEFTPADDING", (0, 1), (0, -1), 6),  # Padding extra textos
-            ("RIGHTPADDING", (3, 1), (3, -1), 6), # Padding extra números
+            ("RIGHTPADDING", (3, 1), (5, -1), 6), # Padding extra números
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"), # TOTAL fila
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#F1F3F4")),
         ]
     )
     story.extend([table, Spacer(1, 10), Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])])
@@ -124,7 +148,7 @@ def build_pdf_ausencias_totales(request, d1: date, d2: date, rows: list) -> Http
     table = _tabla_estilizada(
         headers=["Empleado / Usuario", "Departamento", "Tipo", "Ausencias", "Bajas", "Observaciones"],
         rows=body_rows,
-        col_widths=[50 * mm, 40 * mm, 20 * mm, 15 * mm, 15 * mm, 40 * mm],
+        col_widths=[50 * mm, 40 * mm, 20 * mm, 15 * mm, 15 * mm, 30 * mm],
         style_overrides=[
             ("ALIGN", (0, 1), (0, -1), "LEFT"),
             ("ALIGN", (3, 1), (4, -1), "RIGHT"),
@@ -134,7 +158,17 @@ def build_pdf_ausencias_totales(request, d1: date, d2: date, rows: list) -> Http
             ("LEFTPADDING", (5, 1), (5, -1), 6),
         ]
     )
-    story.extend([table, Spacer(1, 10), Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])])
+    
+    total_ausencias = sum(r["ausencias"] for r in rows)
+    horas_negativas = total_ausencias * 8
+    
+    story.extend([
+        table, 
+        Spacer(1, 15), 
+        Paragraph(f"<b>Equivalencia en horas de ausencias totales:</b> -{horas_negativas} hrs", getSampleStyleSheet()["Normal"]),
+        Spacer(1, 10),
+        Paragraph("Consejo Nacional para el Desarrollo Económico y Social", getSampleStyleSheet()["Normal"])
+    ])
 
     doc.build(story)
     return response
@@ -196,26 +230,36 @@ def build_pdf_reporte_empleado(request, d1: date, d2: date, meta: dict, rows: li
     # Tabla
     body_rows = []
     total_segundos = 0
+    total_esperado = timedelta(0)
+    total_variacion = timedelta(0)
+    
     for r in rows:
         fecha_txt = r["fecha"].strftime("%d/%m/%Y")
         ent_txt = r["entrada"].strftime("%H:%M") if r["entrada"] else "--:--"
         sal_txt = r["salida"].strftime("%H:%M") if r["salida"] else "--:--"
+        esp_txt = _hhmm_func(r.get("horas_a_trabajar", timedelta(0)))
         tot_txt = _hhmm_func(r["total"])
+        var_txt = _hhmm_func(r.get("variacion", timedelta(0)))
+        
         total_segundos += r["total"].total_seconds()
-        body_rows.append([fecha_txt, ent_txt, sal_txt, tot_txt])
+        total_esperado += r.get("horas_a_trabajar", timedelta(0))
+        total_variacion += r.get("variacion", timedelta(0))
+        
+        body_rows.append([fecha_txt, ent_txt, sal_txt, esp_txt, tot_txt, var_txt])
 
     # Fila de totales
     td_total = timedelta(seconds=total_segundos)
-    body_rows.append(["TOTAL", "", "", _hhmm_func(td_total)])
+    body_rows.append(["TOTAL", "", "", _hhmm_func(total_esperado), _hhmm_func(td_total), _hhmm_func(total_variacion)])
 
     table = _tabla_estilizada(
-        headers=["Fecha", "Entrada", "Salida", "Horas Trabajadas"],
+        headers=["Fecha", "Entrada", "Salida", "A Trabajar", "Trabajadas", "Variación"],
         rows=body_rows,
-        col_widths=[40 * mm, 35 * mm, 35 * mm, 40 * mm],
+        col_widths=[30 * mm, 25 * mm, 25 * mm, 30 * mm, 30 * mm, 30 * mm],
         style_overrides=[
             ("ALIGN", (0, 1), (0, -1), "LEFT"),
             ("ALIGN", (1, 1), (-1, -1), "CENTER"), # Entradas, salidas y horas centradas
             ("LEFTPADDING", (0, 1), (0, -1), 6),
+            ("RIGHTPADDING", (3, 1), (-1, -1), 6), # Padding extra números
         ]
     )
     
@@ -368,6 +412,8 @@ def build_pdf_rep_ausencias_empleado(request, d1: date, d2: date, meta: dict, ro
     story.extend(
         [
             table,
+            Spacer(1, 15),
+            Paragraph(f"<b>Equivalencia en horas de ausencias:</b> -{total_ausencias * 8} hrs", styles["Normal"]),
             Spacer(1, 10),
             Paragraph("Consejo Nacional para el Desarrollo Económico y Social", styles["Normal"]),
         ]
@@ -475,20 +521,22 @@ def build_pdf_asistencia_general(request, d1: date, d2: date, rows: list, _hhmm_
             r["fecha"].strftime("%d/%m/%Y"),
             r["entrada"].strftime("%H:%M") if r["entrada"] else "--:--",
             r["salida"].strftime("%H:%M") if r["salida"] else "--:--",
+            _hhmm_func(r.get("horas_a_trabajar", timedelta(0))),
             _hhmm_func(r["total_horas"]) if r["total_horas"] else "--:--",
+            _hhmm_func(r.get("variacion", timedelta(0))),
             r["estado"]
         ])
 
     table = _tabla_estilizada(
-        headers=["Empleado", "Departamento", "Tipo", "Fecha", "Entrada", "Salida", "Horas", "Estado"],
+        headers=["Empleado", "Departamento", "Tipo", "Fecha", "Entrada", "Salida", "Horas Esp.", "Horas", "Variación", "Estado"],
         rows=body_rows,
-        col_widths=[50*mm, 40*mm, 20*mm, 25*mm, 25*mm, 25*mm, 25*mm, 30*mm],
+        col_widths=[50*mm, 35*mm, 20*mm, 25*mm, 20*mm, 20*mm, 22*mm, 20*mm, 25*mm, 30*mm],
         style_overrides=[
             ("ALIGN", (0, 1), (1, -1), "LEFT"),
-            ("ALIGN", (3, 1), (6, -1), "CENTER"),
-            ("ALIGN", (7, 1), (7, -1), "LEFT"),
+            ("ALIGN", (3, 1), (8, -1), "CENTER"),
+            ("ALIGN", (9, 1), (9, -1), "LEFT"),
             ("LEFTPADDING", (0, 1), (0, -1), 4),
-            ("RIGHTPADDING", (6, 1), (6, -1), 4),
+            ("RIGHTPADDING", (6, 1), (8, -1), 4),
         ]
     )
 

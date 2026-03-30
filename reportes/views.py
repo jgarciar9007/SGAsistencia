@@ -66,8 +66,13 @@ def _parse_rango_request(request, ini_key: str, fin_key: str) -> Tuple[date, dat
 def _hhmm(td: timedelta | None) -> str:
     if not td:
         return "00:00"
-    mins = int(td.total_seconds() // 60)
-    return f"{mins // 60:02d}:{mins % 60:02d}"
+    
+    total_secs = int(td.total_seconds())
+    sign = "-" if total_secs < 0 else ""
+    total_secs = abs(total_secs)
+    
+    mins = total_secs // 60
+    return f"{sign}{mins // 60:02d}:{mins % 60:02d}"
 
 
 def _laborables(d1: date, d2: date) -> Tuple[List[date], set]:
@@ -271,6 +276,13 @@ class ReporteAsistenciaGeneralView(View):
                     # [MODIFICADO] Sin empleado asociado -> no mostrar en reporte
                     continue
 
+            horas_a_trabajar = timedelta(hours=8) if r["fecha"].weekday() < 5 else timedelta(0)
+            variacion = horas - horas_a_trabajar
+
+            signo_var = "-" if variacion.total_seconds() < 0 else ""
+            var_secs = abs(int(variacion.total_seconds()))
+            var_str = f"{signo_var}{var_secs // 3600:02d}:{(var_secs % 3600) // 60:02d}"
+
             filas.append({
                 "fecha": r["fecha"],
                 "empleado_id": emp_id,
@@ -278,7 +290,9 @@ class ReporteAsistenciaGeneralView(View):
                 "departamento": depto,
                 "entrada": entrada,
                 "salida": salida,
+                "horas_a_trabajar": _hhmm(horas_a_trabajar),
                 "total_horas": _hhmm(horas),
+                "variacion": var_str,
             })
 
         paginator = Paginator(filas, self.page_size)
@@ -746,6 +760,9 @@ class NominaHorasPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
         )
 
         totals: Dict[Tuple, dict] = {}
+        laborables_list, _ = _laborables(d1, d2)
+        total_horas_a_trabajar = timedelta(hours=8 * len(laborables_list))
+
         for r in agg:
             entrada = r["entrada"]
             salida = r["salida"] if r["n"] >= 2 else None
@@ -787,8 +804,11 @@ class NominaHorasPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                     continue
 
             if key not in totals:
-                totals[key] = {"nombre": nombre, "departamento": depto, "tipo": tipo, "puesto": puesto, "total": timedelta()}
+                totals[key] = {"nombre": nombre, "departamento": depto, "tipo": tipo, "puesto": puesto, "total": timedelta(), "horas_a_trabajar": total_horas_a_trabajar}
             totals[key]["total"] += horas
+
+        for val in totals.values():
+            val["variacion"] = val["total"] - val["horas_a_trabajar"]
 
         rows = sorted(totals.values(), key=lambda x: ((x["nombre"] or "").lower(), (x["departamento"] or "").lower()))
         return rows
@@ -1271,12 +1291,17 @@ class ReporteEmpleadoPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                 meta["tipo"] = r.get("usuario__empleado__tipo_vinculacion") or ""
                 meta["puesto"] = r.get("usuario__empleado__puesto") or ""
 
+            horas_a_trabajar = timedelta(hours=8) if r["fecha"].weekday() < 5 else timedelta(0)
+            variacion = total - horas_a_trabajar
+
             rows.append(
                 {
                     "fecha": r["fecha"],
                     "entrada": entrada,
                     "salida": salida,
+                    "horas_a_trabajar": horas_a_trabajar,
                     "total": total,
+                    "variacion": variacion,
                 }
             )
 
@@ -1833,6 +1858,9 @@ class ReporteAsistenciaGeneralPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                 else:
                     continue
 
+            horas_a_trabajar = timedelta(hours=8) if r["fecha"].weekday() < 5 else timedelta(0)
+            variacion = horas - horas_a_trabajar
+
             filas.append({
                 "fecha": r["fecha"],
                 "nombre": nombre,
@@ -1840,7 +1868,9 @@ class ReporteAsistenciaGeneralPDFView(LoginRequiredMixin, StaffOnlyMixin, View):
                 "tipo": tipo_row,
                 "entrada": entrada,
                 "salida": salida,
+                "horas_a_trabajar": horas_a_trabajar,
                 "total_horas": horas,  # Pasamos timedelta para que el generador lo formatee
+                "variacion": variacion,
                 "estado": "Tarde" if (entrada and (entrada.hour > HORA_INICIO or (entrada.hour == HORA_INICIO and entrada.minute > TOL_MINUTOS))) else "Puntual"
             })
 
